@@ -32,6 +32,8 @@ logger = logging.getLogger(__name__)
 def path_encoding(img_names):
     sen_enc = []
     for img_name in img_names :
+
+        print(img_name)
         name_byte = img_name.encode('utf-8')
         name_byte = np.array(name_byte)
         sen_enc.append(name_byte)
