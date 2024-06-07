@@ -23,7 +23,7 @@ class Model(nn.Module) :
         self.encoder = Encoder(seqlen, num_joint=num_joint, embed_dim=embed_dim, t_encoder_depth=t_encoder_depth, j_encoder_depth=j_encoder_depth)
         self.decoder = Decoder(seqlen=16, num_joint=19, embed_dim=64)
 
-    def forward(self, img_feat, vitpose_j2d, img_path):
+    def forward(self, img_feat, vitpose_j2d, img_path=None):
         """
         x       : [B, T, 2048]
         vitpose : [B, T, J, 3]

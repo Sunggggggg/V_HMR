@@ -41,8 +41,12 @@ class Encoder(nn.Module) :
         text_emb    : [B, 1, 512]
         """
         f_img = self.temp_encoder(img_feat)
-        f_text = self.text_encoder(img_path)            # [B, 1, 512]
         f_joint = self.lifter(vitpose_j2d, img_feat)    # [B, J, 3]
+
+        if img_path is None :
+            f_text = None
+        else : 
+            f_text = self.text_encoder(img_path)            # [B, 1, 512]
         
         return f_img, f_joint, f_text 
 
