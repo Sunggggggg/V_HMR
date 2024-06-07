@@ -160,7 +160,7 @@ class Trainer():
             timer['data'] = time.time() - start
             start = time.time()
 
-            pred_mesh, evo_pose, pose3d = self.generator(input_feat, input_pose, input_path)
+            pred_mesh, evo_pose, pose3d = self.generator(input_path, input_feat, input_pose)
             timer['forward'] = time.time() - start
             start = time.time()
 
