@@ -9,7 +9,7 @@ from functools import partial
 from lib.models.trans_operator import Block
 from lib.models.Motion.transformer import Transformer
 
-from lib.core.config import cfg, BASE_DATA_DIR
+from lib.core.config import cfg, PMCE_POSE_DIR
 
 
 # generate caption
@@ -18,40 +18,6 @@ gen_kwargs = {
     "max_length": 30, 
     "num_beams": 8,
 }
-
-class Encoder(nn.Module) :
-    def __init__(self, 
-                 seqlen,
-                 num_joint=19,
-                 embed_dim=512,
-                 t_encoder_depth=3,
-                 j_encoder_depth=3,
-                 lifter_pretrained=os.path.join(BASE_DATA_DIR, 'pose_3dpw.pth.tar')
-                 ) :
-        self.temp_encoder = TempEncoder(seqlen=seqlen, embed_dim=embed_dim, mlp_hidden_dim=embed_dim*2, depth=t_encoder_depth)
-        self.text_encoder = CaptionEncoder()
-        self.lifter = JointEncoder(num_frames=seqlen, num_joints=num_joint, embed_dim=embed_dim, depth=j_encoder_depth, pretrained=lifter_pretrained)
-
-    def forward(self, img_feat, vitpose_j2d, img_path) :
-        """
-        img_feat    : [B, T, 2048]
-        joint_2d    : [B, T, J, 2]
-        text_emb    : [B, 1, 512]
-
-        return
-        img_feat    : [B, T, 512]
-        vitpose_3d  : [B, J, 3]
-        text_emb    : [B, 1, 512]
-        """
-        f_img = self.temp_encoder(img_feat)
-        f_joint = self.lifter(vitpose_j2d, img_feat)    # [B, J, 3]
-
-        if img_path is None :
-            f_text = None
-        else : 
-            f_text = self.text_encoder(img_path)            # [B, 1, 512]
-        
-        return f_img, f_joint, f_text 
 
 class TempEncoder(nn.Module):
     def __init__(self,
@@ -194,3 +160,37 @@ class JointEncoder(nn.Module) :
         xout = xout.squeeze(1)
 
         return xout
+
+class Encoder(nn.Module) :
+    def __init__(self, 
+                 seqlen,
+                 num_joint=19,
+                 embed_dim=512,
+                 t_encoder_depth=3,
+                 j_encoder_depth=3,
+                 lifter_pretrained=os.path.join(PMCE_POSE_DIR, 'pose_3dpw.pth.tar')
+                 ) :
+        self.temp_encoder = TempEncoder(seqlen=seqlen, embed_dim=embed_dim, mlp_hidden_dim=embed_dim*2, depth=t_encoder_depth)
+        self.text_encoder = CaptionEncoder()
+        self.lifter = JointEncoder(num_frames=seqlen, num_joints=num_joint, embed_dim=embed_dim, depth=j_encoder_depth, pretrained=lifter_pretrained)
+
+    def forward(self, img_feat, vitpose_j2d, img_path) :
+        """
+        img_feat    : [B, T, 2048]
+        joint_2d    : [B, T, J, 2]
+        text_emb    : [B, 1, 512]
+
+        return
+        img_feat    : [B, T, 512]
+        vitpose_3d  : [B, J, 3]
+        text_emb    : [B, 1, 512]
+        """
+        f_img = self.temp_encoder(img_feat)
+        f_joint = self.lifter(vitpose_j2d, img_feat)    # [B, J, 3]
+
+        if img_path is None :
+            f_text = None
+        else : 
+            f_text = self.text_encoder(img_path)            # [B, 1, 512]
+        
+        return f_img, f_joint, f_text 
