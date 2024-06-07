@@ -99,12 +99,12 @@ class Trainer():
         losses = AverageMeter()
         kp_2d_loss = AverageMeter()
         kp_3d_loss = AverageMeter()
-        kp_2d_loss_short = AverageMeter()
-        kp_3d_loss_short = AverageMeter()
-        accel_loss_mae_2d = AverageMeter()
-        accel_loss_mae_3d = AverageMeter()
-        accel_loss_short_2d = AverageMeter()
-        accel_loss_short_3d = AverageMeter()
+        kp_2d_loss_local = AverageMeter()
+        kp_3d_loss_local = AverageMeter()
+        accel_loss_global_2d = AverageMeter()
+        accel_loss_global_3d = AverageMeter()
+        accel_loss_local_2d = AverageMeter()
+        accel_loss_local_3d = AverageMeter()
         timer = {
             'data': 0,
             'forward': 0,
@@ -154,25 +154,22 @@ class Trainer():
                 input_path = target_3d['img_names'].cuda()
             else:
                 input_feat = target_2d['features'].cuda()
-                input_pose = target_3d['vitpose_j2d'].cuda()
-                input_path = target_3d['img_names'].cuda()
+                input_pose = target_2d['vitpose_j2d'].cuda()
+                input_path = target_2d['img_names'].cuda()
 
             timer['data'] = time.time() - start
             start = time.time()
 
-            pred_mesh, evo_pose, pose3d = self.generator(input_path, input_feat, input_pose)
+            smpl_output, smpl_output_global = self.generator(input_path, input_feat, input_pose, is_train=True)
             timer['forward'] = time.time() - start
             start = time.time()
 
             gen_loss, loss_dict = self.criterion(
-                generator_outputs_mae=pred_mae,
-                generator_outputs_short=preds,
+                generator_outputs_global=smpl_output_global,
+                generator_outputs_local=smpl_output,
                 data_2d=target_2d,
-                data_3d=target_3d,
-                scores=None, 
-                mask_ids=mask_ids
+                data_3d=target_3d
             )
-
 
             timer['loss'] = time.time() - start
             start = time.time()
@@ -180,26 +177,21 @@ class Trainer():
             # <======= Backprop generator and discriminator
             self.gen_optimizer.zero_grad()
             gen_loss.backward()
-            # print(torch.norm(torch.stack([torch.norm(p.grad.detach()).to('cuda') for p in self.generator.parameters() if p.grad != None])))
-            if self.clip_norm_num:
-                torch.nn.utils.clip_grad_norm_(self.generator.parameters(), self.clip_norm_num)
             self.gen_optimizer.step()
 
             # <======= Log training info
             total_loss = gen_loss
-            # exclude motion discriminator
-            # total_loss = gen_loss + motion_dis_loss
 
-            losses.update(total_loss.item(), inp.size(0))
-            kp_2d_loss.update(loss_dict['loss_kp_2d_mae'].item(), inp.size(0))
-            kp_3d_loss.update(loss_dict['loss_kp_3d_mae'].item(), inp.size(0))
-            kp_2d_loss_short.update(loss_dict['loss_kp_2d_short'].item(), inp.size(0))
-            kp_3d_loss_short.update(loss_dict['loss_kp_3d_short'].item(), inp.size(0))
+            losses.update(total_loss.item(), input_feat.size(0))
+            kp_2d_loss.update(loss_dict['loss_kp_2d_global'].item(), input_feat.size(0))
+            kp_3d_loss.update(loss_dict['loss_kp_3d_global'].item(), input_feat.size(0))
+            kp_2d_loss_local.update(loss_dict['loss_kp_2d_local'].item(), input_feat.size(0))
+            kp_3d_loss_local.update(loss_dict['loss_kp_3d_local'].item(), input_feat.size(0))
 
-            accel_loss_mae_2d.update(loss_dict['loss_accel_2d_mae'].item(), inp.size(0))
-            accel_loss_mae_3d.update(loss_dict['loss_accel_3d_mae'].item(), inp.size(0))
-            accel_loss_short_2d.update(loss_dict['loss_accel_2d_short'].item(), inp.size(0))
-            accel_loss_short_3d.update(loss_dict['loss_accel_3d_short'].item(), inp.size(0))
+            accel_loss_global_2d.update(loss_dict['loss_accel_2d_global'].item(), input_feat.size(0))
+            accel_loss_global_3d.update(loss_dict['loss_accel_3d_global'].item(), input_feat.size(0))
+            accel_loss_local_2d.update(loss_dict['loss_accel_2d_local'].item(), input_feat.size(0))
+            accel_loss_local_3d.update(loss_dict['loss_accel_3d_local'].item(), input_feat.size(0))
 
             timer['backward'] = time.time() - start
             timer['batch'] = timer['data'] + timer['forward'] + timer['loss'] + timer['backward']
@@ -207,27 +199,14 @@ class Trainer():
 
             summary_string = f'({i + 1}/{self.num_iters_per_epoch}) | Total: {bar.elapsed_td} | ' \
                              f'ETA: {bar.eta_td:} | loss: {losses.avg:.2f} | 2d: {kp_2d_loss.avg:.2f} ' \
-                             f'| 3d: {kp_3d_loss.avg:.2f} 2d_short: {kp_2d_loss_short.avg:.2f} ' \
-                             f'| 3d_short: {kp_3d_loss_short.avg:.2f} 2d_mae_accel: {accel_loss_mae_2d.avg:.2f} ' \
-                             f'| 3d_mae_accel: {accel_loss_mae_3d.avg:.2f} ' \
-                             f'| 2d_short_accel: {accel_loss_short_2d.avg:.2f} ' \
-                             f'| 3d_short_accel: {accel_loss_short_3d.avg:.2f} '
+                             f'| 3d: {kp_3d_loss.avg:.2f} 2d_local: {kp_2d_loss_local.avg:.2f} ' \
+                             f'| 3d_local: {kp_3d_loss_local.avg:.2f} 2d_global_accel: {accel_loss_global_2d.avg:.2f} ' \
+                             f'| 3d_global_accel: {accel_loss_global_3d.avg:.2f} ' \
+                             f'| 2d_local_accel: {accel_loss_local_2d.avg:.2f} ' \
+                             f'| 3d_local_accel: {accel_loss_local_3d.avg:.2f} '
 
-            for k, v in loss_dict.items():
-                summary_string += f' | {k}: {v:.3f}'
-                self.writer.add_scalar('train_loss/'+k, v, global_step=self.train_global_step)
             for k,v in timer.items():
                 summary_string += f' | {k}: {v:.2f}'
-
-            self.writer.add_scalar('train_loss/loss', total_loss.item(), global_step=self.train_global_step)
-            if self.debug:
-                print('==== Visualize ====')
-                from lib.utils.vis import batch_visualize_vid_preds
-                video = target_3d['video']
-                dataset = 'spin'
-                vid_tensor = batch_visualize_vid_preds(video, preds[-1], target_3d.copy(),
-                                                       vis_hmr=False, dataset=dataset)
-                self.writer.add_video('train-video', vid_tensor, global_step=self.train_global_step, fps=10)
 
             self.train_global_step += 1
             bar.suffix = summary_string
@@ -259,14 +238,16 @@ class Trainer():
             for i, target in enumerate(self.valid_loader):
                 move_dict_to_device(target, self.device)
                 # <=============
-                inp = target['features']
-                batch = len(inp)
-                preds, mask_ids, pred_mae = self.generator(inp, is_train=False, J_regressor=J_regressor)
+                input_feat = target['features'].cuda()
+                input_pose = target['vitpose_j2d'].cuda()
+                input_path = target['img_names'].cuda()
+                batch = len(input_feat)
+                smpl_output, smpl_output_global = self.generator(input_path, input_feat, input_pose, is_train=False, J_regressor=J_regressor)
                 # convert to 14 keypoint format for evaluation
-                n_kp = preds[-1]['kp_3d'].shape[-2]
-                pred_j3d = preds[-1]['kp_3d'].view(-1, n_kp, 3).cpu().numpy()
+                n_kp = smpl_output[-1]['kp_3d'].shape[-2]
+                pred_j3d = smpl_output[-1]['kp_3d'].view(-1, n_kp, 3).cpu().numpy()
                 target_j3d = target['kp_3d'].view(-1, n_kp, 3).cpu().numpy()
-                pred_verts = preds[-1]['verts'].view(-1, 6890, 3).cpu().numpy()
+                pred_verts = smpl_output[-1]['verts'].view(-1, 6890, 3).cpu().numpy()
                 target_theta = target['theta'].view(-1, 85).cpu().numpy()
                 self.evaluation_accumulators['pred_verts'].append(pred_verts)
                 self.evaluation_accumulators['target_theta'].append(target_theta)
@@ -300,7 +281,6 @@ class Trainer():
             # log the learning rate
             for param_group in self.gen_optimizer.param_groups:
                 print(f'Learning rate {param_group["lr"]}')
-                self.writer.add_scalar('lr/gen_lr', param_group['lr'], global_step=self.epoch)
             
             if epoch + 1 >= self.val_epoch:
                 logger.info(f'Epoch {epoch+1} performance: {performance:.4f}')
@@ -310,7 +290,6 @@ class Trainer():
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
 
-        self.writer.close()
 
     def save_model(self, performance, epoch):
         save_dict = {
@@ -393,7 +372,4 @@ class Trainer():
         log_str += ' '.join([f'{k.upper()}: {v:.4f},'for k,v in eval_dict.items()])
         logger.info(log_str)
 
-        for k,v in eval_dict.items():
-            self.writer.add_scalar(f'error/{k}', v, global_step=self.epoch)
-        # return accel_err
         return pa_mpjpe
