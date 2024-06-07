@@ -33,10 +33,10 @@ def path_encoding(img_names):
     sen_enc = []
     for img_name in img_names :
         name_byte = img_name.encode('utf-8')
-        sen_array = np.array(name_byte)
-        sen_enc.append(sen_array)
-    sen_enc = np.array(sen_enc)
-
+        name_byte = np.array(name_byte)
+        sen_enc.append(name_byte)
+    sen_enc = np.stack(sen_enc, axis=0)
+    print(sen_enc.shape)
     return sen_enc
 
 class Dataset3D(Dataset):
