@@ -32,10 +32,8 @@ class Model(nn.Module) :
 
         # Encoder
         f_img, f_joint, f_text  = self.encoder(img_feat, vitpose_j2d, img_path)
-        # Decoder
-        joints3d, vertxs_w_res = self.decoder(f_img, f_joint, f_text)
-
-        return joints3d, vertxs_w_res  # B x 6890 x 3
+        
+        return
         
 
 

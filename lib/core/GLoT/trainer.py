@@ -162,48 +162,22 @@ class Trainer():
 
             # <======= Feedforward generator and discriminator
             if target_2d and target_3d:
-                inp = torch.cat((target_2d['features'], target_3d['features']), dim=0).cuda()
-                inp_vitpose = torch.cat((target_2d['vitpose_j2d'], target_3d['vitpose_j2d']), dim=0).cuda()
+                input_feat = torch.cat((target_2d['features'], target_3d['features']), dim=0).cuda()
+                input_pose = torch.cat((target_2d['vitpose_j2d'], target_3d['vitpose_j2d']), dim=0).cuda()
+                input_path = torch.cat((target_2d['img_names'], target_3d['img_names']), dim=0).cuda()
             elif target_3d:
-                inp = target_3d['features'].cuda()
-                inp_vitpose = target_3d['vitpose_j2d'].cuda()
+                input_feat = target_3d['features'].cuda()
+                input_pose = target_3d['vitpose_j2d'].cuda()
+                input_path = target_3d['img_names'].cuda()
             else:
-                inp = target_2d['features'].cuda()
-                inp_vitpose = target_3d['vitpose_j2d'].cuda()
-    
-            # Replay 
-            if False :
-                timer['data'] = time.time() - start
-                start = time.time()
-
-                inv_inp = inp.flip(1)               # [B, hT, 2048]
-                inv_vitpose = inp_vitpose.flip(1)   # [B, T, J, 3] 
-                preds, mask_ids, pred_mae = self.generator(inv_inp, inv_vitpose, is_train=True)
-                
-                timer['forward'] = time.time() - start
-                start = time.time()
-
-                gen_loss, loss_dict = self.criterion(
-                    generator_outputs_mae=pred_mae,
-                    generator_outputs_short=preds,
-                    data_2d=target_2d,
-                    data_3d=target_3d,
-                    scores=None, 
-                    mask_ids=mask_ids
-                )
-                
-                timer['loss'] = time.time() - start
-                start = time.time()
-
-                # <======= Backprop generator and discriminator
-                self.gen_optimizer.zero_grad()
-                gen_loss.backward()
-                self.gen_optimizer.step()
+                input_feat = target_2d['features'].cuda()
+                input_pose = target_2d['vitpose_j2d'].cuda()
+                input_path = target_2d['img_names'].cuda()
 
             timer['data'] = time.time() - start
             start = time.time()
 
-            preds, mask_ids, pred_mae = self.generator(inp, inp_vitpose, is_train=True)
+            preds, mask_ids, pred_mae = self.generator(input_feat, input_pose, input_path, is_train=True)
             
             timer['forward'] = time.time() - start
             start = time.time()

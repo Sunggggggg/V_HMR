@@ -23,13 +23,8 @@ import os.path as osp
 from progress.bar import Bar
 
 from lib.core.config import BASE_DATA_DIR
-from lib.utils.utils import move_dict_to_device, AverageMeter, check_data_pararell
-from lib.utils.eval_utils import (
-    compute_accel,
-    compute_error_accel,
-    compute_error_verts,
-    batch_compute_similarity_transform_torch,
-)
+from lib.utils.utils import move_dict_to_device, AverageMeter
+
 logger = logging.getLogger(__name__)
 
 
@@ -39,15 +34,10 @@ class Trainer():
             cfg,
             data_loaders,
             generator,
-            motion_discriminator,
             gen_optimizer,
-            dis_motion_optimizer,
             criterion,
             lr_scheduler=None,
-            motion_lr_scheduler=None,
-            writer=None,
             performance_type='min',
-            clip_norm_num=None,
             val_epoch=5
     ):
         dis_motion_update_steps=cfg.TRAIN.MOT_DISCR.UPDATE_STEPS
@@ -62,7 +52,6 @@ class Trainer():
         self.table_name = cfg.TITLE
 
         self.train_2d_loader, self.train_3d_loader, self.valid_loader = data_loaders
-        self.clip_norm_num = clip_norm_num
         self.train_2d_iter = self.train_3d_iter = None
 
         if self.train_2d_loader:
@@ -81,7 +70,6 @@ class Trainer():
         self.criterion = criterion
         self.lr_scheduler = lr_scheduler
         self.device = device
-        self.writer = writer
         self.debug = debug
         self.debug_freq = debug_freq
         self.logdir = logdir
@@ -97,10 +85,6 @@ class Trainer():
         self.evaluation_accumulators = dict.fromkeys(['pred_j3d', 'target_j3d', 'target_theta', 'pred_verts'])
 
         self.num_iters_per_epoch = num_iters_per_epoch
-
-        if self.writer is None:
-            from torch.utils.tensorboard import SummaryWriter
-            self.writer = SummaryWriter(log_dir=self.logdir)
 
         if self.device is None:
             self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -161,16 +145,22 @@ class Trainer():
 
             # <======= Feedforward generator and discriminator
             if target_2d and target_3d:
-                inp = torch.cat((target_2d['features'], target_3d['features']), dim=0).cuda()
+                input_feat = torch.cat((target_2d['features'], target_3d['features']), dim=0).cuda()
+                input_pose = torch.cat((target_2d['vitpose_j2d'], target_3d['vitpose_j2d']), dim=0).cuda()
+                input_path = torch.cat((target_2d['img_names'], target_3d['img_names']), dim=0).cuda()
             elif target_3d:
-                inp = target_3d['features'].cuda()
+                input_feat = target_3d['features'].cuda()
+                input_pose = target_3d['vitpose_j2d'].cuda()
+                input_path = target_3d['img_names'].cuda()
             else:
-                inp = target_2d['features'].cuda()
+                input_feat = target_2d['features'].cuda()
+                input_pose = target_3d['vitpose_j2d'].cuda()
+                input_path = target_3d['img_names'].cuda()
 
             timer['data'] = time.time() - start
             start = time.time()
 
-            preds, mask_ids, pred_mae = self.generator(inp, is_train=True)
+            pred_mesh, evo_pose, pose3d = self.generator(input_feat, input_pose, input_path)
             timer['forward'] = time.time() - start
             start = time.time()
 
