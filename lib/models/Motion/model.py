@@ -13,8 +13,6 @@ class Model(nn.Module) :
                  embed_dim=512,
                  j_encoder_depth=3,
                  t_encoder_depth=3,
-                 lifter_pretrained=os.path.join()
-
                  ) :
         super().__init__()
         self.joint_space = JointTree()
