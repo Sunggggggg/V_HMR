@@ -23,7 +23,7 @@ class Model(nn.Module):
         self.text_emb = CaptionEncoder()
         self.t_trans = TEncoder(embed_dim=embed_dim)
         self.s_trans = STEncoder(depth=depth, embed_dim=embed_dim, mlp_ratio=mlp_ratio,
-            h=num_heads, drop_rate=drop_rate, drop_path_rate=drop_path_rate, 
+            num_heads=num_heads, drop_rate=drop_rate, drop_path_rate=drop_path_rate, 
             attn_drop_rate=attn_drop_rate, length=num_joints)
         self.motion_enc = MotionEncoder(num_frames, embed_dim)
         self.context_enc = ContextEncoder(embed_dim)
