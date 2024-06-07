@@ -37,7 +37,6 @@ def path_encoding(img_names):
         sen_tensor = torch.tensor(list(sen_bytes), dtype=torch.uint8)
         sen_enc.append(sen_tensor)
     sen_enc = torch.stack(sen_enc, axis=0)
-    print(sen_enc.shape)
     return sen_enc
 
 class Dataset3D(Dataset):
