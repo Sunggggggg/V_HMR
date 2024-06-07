@@ -24,16 +24,14 @@ class JointTree(nn.Module) :
     def refine_joint(self, vitpose_2d) :
         vitpose_j2d_pelvis = vitpose_2d[:,:,[11,12],:2].mean(dim=2, keepdim=True) 
         vitpose_j2d_neck = vitpose_2d[:,:,[5,6],:2].mean(dim=2, keepdim=True)  
-        joint_2d_feats = torch.cat([vitpose_2d[... ,:2], vitpose_j2d_pelvis, vitpose_j2d_neck], dim=2)   # [B, T, J, 2]
-
+        joint_2d_feats = torch.cat([vitpose_2d[... ,:2], vitpose_j2d_neck], dim=2)   # [B, T, J, 2]
+        joint_2d_feats = joint_2d_feats- vitpose_j2d_pelvis
         return joint_2d_feats
 
     def forward(self, vitpose_2d) :
         """
         vitpose_2d : [B, T, J, 2]
         """
-        joint_2d_feats = self.refine_joint(vitpose_2d)
-        pelvis_xy = self.pelvis_coordi(joint_2d_feats)
-        body_xy = joint_2d_feats - pelvis_xy
+        body_xy = self.refine_joint(vitpose_2d)
         body_rp = self.xy2polar(body_xy)
         return body_rp

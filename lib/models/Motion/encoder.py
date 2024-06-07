@@ -1,11 +1,108 @@
+import os
+import cv2
 import torch
 import torch.nn as nn
+import clip
+from transformers import AutoImageProcessor, AutoTokenizer, VisionEncoderDecoderModel
 from einops import rearrange
 from functools import partial
 from lib.models.trans_operator import Block
+from lib.models.Motion.transformer import Transformer
 
+# generate caption
+gen_kwargs = {
+    "min_length": 10, 
+    "max_length": 30, 
+    "num_beams": 8,
+}
+
+class Encoder(nn.Module) :
+    def __init__(self, 
+                 seqlen,
+                 num_joint=19,
+                 embed_dim=512,
+                 t_encoder_depth=3,
+                 j_encoder_depth=3,
+                 lifter_pretrained=os.path.join()
+                 ) :
+        self.temp_encoder = TempEncoder(seqlen=seqlen, embed_dim=embed_dim, mlp_hidden_dim=embed_dim*2, depth=t_encoder_depth)
+        self.text_encoder = CaptionEncoder()
+        self.lifter = JointEncoder(num_frames=seqlen, num_joints=num_joint, embed_dim=embed_dim, depth=j_encoder_depth, pretrained=lifter_pretrained)
+
+    def forward(self, img_feat, vitpose_j2d, img_path) :
+        """
+        img_feat    : [B, T, 2048]
+        joint_2d    : [B, T, J, 2]
+        text_emb    : [B, 1, 512]
+
+        return
+        img_feat    : [B, T, 512]
+        vitpose_3d  : [B, J, 3]
+        text_emb    : [B, 1, 512]
+        """
+        f_img = self.temp_encoder(img_feat)
+        f_text = self.text_encoder(img_path)            # [B, 1, 512]
+        f_joint = self.lifter(vitpose_j2d, img_feat)    # [B, J, 3]
+        
+        return f_img, f_joint, f_text 
+
+class TempEncoder(nn.Module):
+    def __init__(self,
+                 seqlen, 
+                 embed_dim=512,
+                 mlp_hidden_dim=1024,
+                 depth=3
+                 ) :
+        super().__init__()
+        self.input_proj = nn.Linear(2048, embed_dim)
+        self.temp_encoder = Transformer(depth=depth, dim=embed_dim, mlp_hidden_dim=mlp_hidden_dim, length=seqlen)
+        
+    def forward(self, f_img) :
+        f_img = self.input_proj(f_img)
+        f_img = self.temp_encoder(f_img)
+        return f_img
+    
+class CaptionEncoder(nn.Module):
+    def __init__(self, ) :
+        super().__init__()
+        # Video captioning
+        self.image_processor = AutoImageProcessor.from_pretrained("MCG-NJU/videomae-base")
+        self.tokenizer = AutoTokenizer.from_pretrained("gpt2")
+        self.model = VisionEncoderDecoderModel.from_pretrained("Neleac/timesformer-gpt2-video-captioning")
+
+        # Clip
+        self.clip = clip.load("ViT-B/32")
+
+    def video_caption(self, seq_path):
+        """
+        seq_path : list 16
+        """
+        frames = []
+        for path in seq_path :
+            path = path.numpy().tobytes().decode('utf-8')
+            img = cv2.imread(path)
+            H, W = img.shape[:2]
+            H, W = H//4, W//4
+            img = cv2.resize(img, (H, W), interpolation=cv2.INTER_AREA)
+            frames.append(img)
+        
+        pixel_values = self.image_processor(frames, return_tensors="pt").pixel_values # [B, N, 3, H, W]
+        tokens = self.model.generate(pixel_values, **gen_kwargs)
+        caption = self.tokenizer.batch_decode(tokens, skip_special_tokens=True)
+
+        del frames
+        return caption
+
+    def forward(self, seq_path):
+        caption = self.video_caption(seq_path) # [B, dim]
+
+        # Text embedding
+        clip_token = self.clip.tokenize(caption)
+        f_text = self.clip.encode_text(clip_token)
+        return f_text
+    
 """From PMCE models.PoseEstimation"""
-class JointLift(nn.Module) :
+class JointEncoder(nn.Module) :
     def __init__(self, num_frames=16, num_joints=17, embed_dim=256, depth=3, num_heads=8, mlp_ratio=2., 
                  qkv_bias=True, qk_scale=None, drop_rate=0., attn_drop_rate=0., drop_path_rate=0.2, norm_layer=None, pretrained=False):
         super().__init__()

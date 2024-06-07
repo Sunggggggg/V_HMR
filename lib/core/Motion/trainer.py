@@ -30,7 +30,6 @@ from lib.utils.eval_utils import (
     compute_error_verts,
     batch_compute_similarity_transform_torch,
 )
-
 logger = logging.getLogger(__name__)
 
 
@@ -163,48 +162,15 @@ class Trainer():
             # <======= Feedforward generator and discriminator
             if target_2d and target_3d:
                 inp = torch.cat((target_2d['features'], target_3d['features']), dim=0).cuda()
-                inp_vitpose = torch.cat((target_2d['vitpose_j2d'], target_3d['vitpose_j2d']), dim=0).cuda()
             elif target_3d:
                 inp = target_3d['features'].cuda()
-                inp_vitpose = target_3d['vitpose_j2d'].cuda()
             else:
                 inp = target_2d['features'].cuda()
-                inp_vitpose = target_3d['vitpose_j2d'].cuda()
-    
-            # Replay 
-            if False :
-                timer['data'] = time.time() - start
-                start = time.time()
-
-                inv_inp = inp.flip(1)               # [B, hT, 2048]
-                inv_vitpose = inp_vitpose.flip(1)   # [B, T, J, 3] 
-                preds, mask_ids, pred_mae = self.generator(inv_inp, inv_vitpose, is_train=True)
-                
-                timer['forward'] = time.time() - start
-                start = time.time()
-
-                gen_loss, loss_dict = self.criterion(
-                    generator_outputs_mae=pred_mae,
-                    generator_outputs_short=preds,
-                    data_2d=target_2d,
-                    data_3d=target_3d,
-                    scores=None, 
-                    mask_ids=mask_ids
-                )
-                
-                timer['loss'] = time.time() - start
-                start = time.time()
-
-                # <======= Backprop generator and discriminator
-                self.gen_optimizer.zero_grad()
-                gen_loss.backward()
-                self.gen_optimizer.step()
 
             timer['data'] = time.time() - start
             start = time.time()
 
-            preds, mask_ids, pred_mae = self.generator(inp, inp_vitpose, is_train=True)
-            
+            preds, mask_ids, pred_mae = self.generator(inp, is_train=True)
             timer['forward'] = time.time() - start
             start = time.time()
 
@@ -216,13 +182,17 @@ class Trainer():
                 scores=None, 
                 mask_ids=mask_ids
             )
-            
+
+
             timer['loss'] = time.time() - start
             start = time.time()
 
             # <======= Backprop generator and discriminator
             self.gen_optimizer.zero_grad()
             gen_loss.backward()
+            # print(torch.norm(torch.stack([torch.norm(p.grad.detach()).to('cuda') for p in self.generator.parameters() if p.grad != None])))
+            if self.clip_norm_num:
+                torch.nn.utils.clip_grad_norm_(self.generator.parameters(), self.clip_norm_num)
             self.gen_optimizer.step()
 
             # <======= Log training info
@@ -300,10 +270,8 @@ class Trainer():
                 move_dict_to_device(target, self.device)
                 # <=============
                 inp = target['features']
-                inp_vitpose = target['vitpose_j2d']
                 batch = len(inp)
-                preds, mask_ids, pred_mae = self.generator(inp ,inp_vitpose, is_train=False, J_regressor=J_regressor)
-
+                preds, mask_ids, pred_mae = self.generator(inp, is_train=False, J_regressor=J_regressor)
                 # convert to 14 keypoint format for evaluation
                 n_kp = preds[-1]['kp_3d'].shape[-2]
                 pred_j3d = preds[-1]['kp_3d'].view(-1, n_kp, 3).cpu().numpy()
@@ -373,7 +341,7 @@ class Trainer():
         if is_best:
             logger.info('Best performance achived, saving it!')
             self.best_performance = performance
-            shutil.copyfile(filename, osp.join(self.logdir, f'model_best_{epoch}.pth.tar'))
+            shutil.copyfile(filename, osp.join(self.logdir, f'model_best.pth.tar'))
 
             with open(osp.join(self.logdir, 'best.txt'), 'w') as f:
                 f.write(str(float(performance)))
@@ -437,4 +405,5 @@ class Trainer():
 
         for k,v in eval_dict.items():
             self.writer.add_scalar(f'error/{k}', v, global_step=self.epoch)
+        # return accel_err
         return pa_mpjpe
