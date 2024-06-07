@@ -1,7 +1,6 @@
 import os
 import torch
 import torch.nn as nn
-import torch_dct as dct
 
 from lib.models.Motion.jointspace import JointTree
 from lib.models.Motion.encoder import Encoder
