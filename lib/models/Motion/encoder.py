@@ -62,7 +62,7 @@ class TempEncoder(nn.Module):
                  ) :
         super().__init__()
         self.input_proj = nn.Linear(2048, embed_dim)
-        self.temp_encoder = Transformer(depth=depth, dim=embed_dim, mlp_hidden_dim=mlp_hidden_dim, length=seqlen)
+        self.temp_encoder = Transformer(depth=depth, embed_dim=embed_dim, mlp_hidden_dim=mlp_hidden_dim, length=seqlen)
         
     def forward(self, f_img) :
         f_img = self.input_proj(f_img)
