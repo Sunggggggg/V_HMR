@@ -72,7 +72,7 @@ class STEncoder(nn.Module):
                  embed_dim=256, 
                  depth=3, 
                  num_heads=8, 
-                 mlp_ratio=2., 
+                 mlp_ratio=2, 
                  drop_rate=0., 
                  attn_drop_rate=0., 
                  drop_path_rate=0.2
