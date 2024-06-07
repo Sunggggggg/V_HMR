@@ -3,7 +3,7 @@ DEBUG: false
 DEBUG_FREQ: 5
 LOGDIR: ''
 DEVICE: 'cuda'
-EXP_NAME: 'table1_0.5_99_gdec_vitpose_2048+PMCE_mixer_150ep_nospin'
+EXP_NAME: 'exp'
 OUTPUT_DIR: './experiments' # your path
 NUM_WORKERS: 8
 SEED_VALUE: 1
@@ -23,18 +23,10 @@ TRAIN:
   BATCH_SIZE: 64
   NUM_ITERS_PER_EPOCH: 1000
 #  PRETRAINED: '/mnt/SCD/VideoHMR/GLoT/experiments/Zip/29-01-2024_01-15-13_table1_3dpw_exp/model_best.pth.tar' # for testing
-#  PRETRAINED: '/mnt/SCD/TexVMR/experiments/27-03-2024_10-49-25_table1_0.5_99_gdec_vitpose_2048+PMCE_mixer/model_best.pth.tar' # for testing
-  Text_Path: '/mnt/SCD/data/preprocessed_data/Text/action_3ds_doing_feat.pt' # for testing
-  action_num: 99
-  Clip_length: 5
-  PRETRAINED_REGRESSOR: '/mnt/SCD/data/base_data/spin_model_checkpoint.pth.tar' # your path
-  #PRETRAINED_REGRESSOR: '' # your path
   RESUME: ''
   START_EPOCH: 0
   END_EPOCH: 150
   LR_PATIENCE: 10
-#  DATA_2D_RATIO: 0.6
-  DATA_2D_RATIO: 0.0
   OVERLAP: 0.
 #  DATASETS_2D:
 #    - 'Insta'
@@ -57,20 +49,3 @@ TRAIN:
       LAYERS: 3
       SIZE: 1024
       DROPOUT: 0.2
-MODEL:
-  MODEL_NAME: GLoT
-  num_head: 8
-  dropout: 0.1
-  drop_path_r: 0.2
-  d_model: 512
-  n_layers: 2
-  atten_drop: 0.
-  mask_ratio: 0.5
-  short_n_layers: 3
-  short_d_model: 256
-  short_num_head: 8 
-  short_dropout: 0.1  
-  short_drop_path_r: 0.2
-  short_atten_drop: 0. 
-  stride_short: 4
-  drop_reg_short: 0.25
