@@ -72,21 +72,6 @@ cfg.TRAIN.GEN_LR = 1e-4
 cfg.TRAIN.GEN_WD = 1e-4
 cfg.TRAIN.GEN_MOMENTUM = 0.9
 
-# <====== motion discriminator optimizer
-cfg.TRAIN.MOT_DISCR = CN()
-cfg.TRAIN.MOT_DISCR.OPTIM = 'SGD'
-cfg.TRAIN.MOT_DISCR.LR = 1e-2
-cfg.TRAIN.MOT_DISCR.WD = 1e-4
-cfg.TRAIN.MOT_DISCR.MOMENTUM = 0.9
-cfg.TRAIN.MOT_DISCR.UPDATE_STEPS = 1
-cfg.TRAIN.MOT_DISCR.FEATURE_POOL = 'concat'
-cfg.TRAIN.MOT_DISCR.HIDDEN_SIZE = 1024
-cfg.TRAIN.MOT_DISCR.NUM_LAYERS = 1
-cfg.TRAIN.MOT_DISCR.ATT = CN()
-cfg.TRAIN.MOT_DISCR.ATT.SIZE = 1024
-cfg.TRAIN.MOT_DISCR.ATT.LAYERS = 1
-cfg.TRAIN.MOT_DISCR.ATT.DROPOUT = 0.1
-
 cfg.DATASET = CN()
 cfg.DATASET.SEQLEN = 20
 cfg.DATASET.OVERLAP = 0.5
@@ -100,9 +85,6 @@ cfg.LOSS.D_MOTION_LOSS_W = 1.
 cfg.LOSS.vel_or_accel_2d_weight = 50.
 cfg.LOSS.vel_or_accel_3d_weight = 100.
 cfg.LOSS.use_accel = True
-
-# GRU model hyperparams
-
             
 def get_cfg_defaults():
     """Get a yacs CfgNode object with default values for my_project."""

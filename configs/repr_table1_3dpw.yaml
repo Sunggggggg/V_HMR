@@ -5,7 +5,7 @@ LOGDIR: ''
 DEVICE: 'cuda'
 EXP_NAME: 'exp'
 OUTPUT_DIR: './experiments' # your path
-NUM_WORKERS: 8
+NUM_WORKERS: 4
 SEED_VALUE: 1
 DATASET:
   SEQLEN: 16
@@ -22,14 +22,16 @@ TRAIN:
   val_epoch: 25
   BATCH_SIZE: 64
   NUM_ITERS_PER_EPOCH: 1000
-#  PRETRAINED: '/mnt/SCD/VideoHMR/GLoT/experiments/Zip/29-01-2024_01-15-13_table1_3dpw_exp/model_best.pth.tar' # for testing
+  #PRETRAINED: '/mnt/SKY/GLoT_ViTPose/experiments/06-05-2024_17-24-39_Context_Token_LQ/checkpoint.pth.tar' # for testing
+  #PRETRAINED_REGRESSOR: '/mnt/SKY/preprocessed_data/spin_model_checkpoint.pth.tar' # your path
   RESUME: ''
   START_EPOCH: 0
-  END_EPOCH: 150
-  LR_PATIENCE: 10
+  END_EPOCH: 50
+  LR_PATIENCE: 5
+  DATA_2D_RATIO: 0.6
   OVERLAP: 0.
-#  DATASETS_2D:
-#    - 'Insta'
+  #DATASETS_2D:
+  #  - 'Insta'
   DATASETS_3D:
     - 'ThreeDPW'
     - 'MPII3D'
@@ -37,15 +39,3 @@ TRAIN:
   DATASET_EVAL: 'ThreeDPW'
   GEN_LR: 0.0001
   GEN_WD: 0.0
-  MOT_DISCR:
-    OPTIM: 'Adam'
-    LR: 0.0001
-    WD: 0.0001
-    MOMENTUM: 0.9
-    HIDDEN_SIZE: 1024
-    NUM_LAYERS: 2
-    FEATURE_POOL: 'attention'
-    ATT:
-      LAYERS: 3
-      SIZE: 1024
-      DROPOUT: 0.2
