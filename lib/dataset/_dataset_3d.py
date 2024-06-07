@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 def path_encoding(img_names):
     sen_enc = []
     for img_name in img_names :
+        img_name = img_name.ljust(100, '@')
         sen_bytes = img_name.encode('utf-8')
         sen_tensor = torch.tensor(list(sen_bytes), dtype=torch.uint8)
         sen_enc.append(sen_tensor)
