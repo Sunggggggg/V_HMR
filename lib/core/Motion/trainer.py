@@ -73,7 +73,6 @@ class Trainer():
         self.debug_freq = debug_freq
         self.logdir = logdir
         self.val_epoch = val_epoch
-        self.dis_motion_update_steps = dis_motion_update_steps
 
         self.performance_type = performance_type
         self.train_global_step = 0
