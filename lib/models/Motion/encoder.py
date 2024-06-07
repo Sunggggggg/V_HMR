@@ -9,6 +9,9 @@ from functools import partial
 from lib.models.trans_operator import Block
 from lib.models.Motion.transformer import Transformer
 
+from lib.core.config import cfg, BASE_DATA_DIR
+
+
 # generate caption
 gen_kwargs = {
     "min_length": 10, 
@@ -23,7 +26,7 @@ class Encoder(nn.Module) :
                  embed_dim=512,
                  t_encoder_depth=3,
                  j_encoder_depth=3,
-                 lifter_pretrained=os.path.join()
+                 lifter_pretrained=os.path.join(BASE_DATA_DIR, 'pose_3dpw.pth.tar')
                  ) :
         self.temp_encoder = TempEncoder(seqlen=seqlen, embed_dim=embed_dim, mlp_hidden_dim=embed_dim*2, depth=t_encoder_depth)
         self.text_encoder = CaptionEncoder()
