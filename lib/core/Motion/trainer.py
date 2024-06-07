@@ -40,7 +40,6 @@ class Trainer():
             performance_type='min',
             val_epoch=5
     ):
-        dis_motion_update_steps=cfg.TRAIN.MOT_DISCR.UPDATE_STEPS
         start_epoch=cfg.TRAIN.START_EPOCH
         end_epoch=cfg.TRAIN.END_EPOCH
         device=cfg.DEVICE
