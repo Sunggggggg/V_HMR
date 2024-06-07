@@ -24,7 +24,7 @@ class Model(nn.Module):
         self.t_trans = TEncoder(embed_dim=embed_dim)
         self.s_trans = STEncoder(depth=depth, embed_dim=embed_dim, mlp_ratio=mlp_ratio,
             num_heads=num_heads, drop_rate=drop_rate, drop_path_rate=drop_path_rate, 
-            attn_drop_rate=attn_drop_rate, length=num_joints)
+            attn_drop_rate=attn_drop_rate)
         self.motion_enc = MotionEncoder(num_frames, embed_dim)
         self.context_enc = ContextEncoder(embed_dim)
 
