@@ -94,7 +94,7 @@ class Dataset3D(Dataset):
 
     def load_db(self):
 
-        db_file = osp.join(GLoT_DB_DIR, f'{self.dataset_name}_{self.set}_db.pt')
+        db_file = osp.join(GLoT_DB_DIR, f'{self.dataset_name}_{self.set}_db_clip.pt')
 
         if self.set == 'train':
             if self.load_opt == 'repr_table4_3dpw_model':
