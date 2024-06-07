@@ -125,6 +125,6 @@ def get_data_loaders(cfg):
         num_workers=cfg.NUM_WORKERS,
     )
 
-    return train_2d_loader, train_3d_loader, valid_loader
+    return None, train_3d_loader, valid_loader
     # exclude motion discriminator
     # return train_2d_loader, train_3d_loader, motion_disc_loader, valid_loader
