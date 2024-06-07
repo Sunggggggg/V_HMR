@@ -101,23 +101,6 @@ cfg.LOSS.vel_or_accel_2d_weight = 50.
 cfg.LOSS.vel_or_accel_3d_weight = 100.
 cfg.LOSS.use_accel = True
 
-cfg.MODEL = CN()
-cfg.MODEL.MODEL_NAME = 'GLoT'
-cfg.MODEL.num_head = 8
-cfg.MODEL.dropout = 0.
-cfg.MODEL.drop_path_r = 0.
-cfg.MODEL.d_model = 1024
-cfg.MODEL.n_layers = 1
-cfg.MODEL.atten_drop = 0.
-cfg.MODEL.mask_ratio =0.
-cfg.MODEL.short_n_layers = 3
-cfg.MODEL.short_d_model = 512
-cfg.MODEL.short_num_head = 8
-cfg.MODEL.short_dropout = 0.1
-cfg.MODEL.short_drop_path_r = 0.2
-cfg.MODEL.short_atten_drop = 0.
-cfg.MODEL.stride_short = 4
-cfg.MODEL.drop_reg_short = 0.5
 # GRU model hyperparams
 
             
