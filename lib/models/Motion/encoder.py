@@ -36,7 +36,7 @@ class TempEncoder(nn.Module):
         return f_img
     
 class CaptionEncoder(nn.Module):
-    def __init__(self, ) :
+    def __init__(self) :
         super().__init__()
         # Video captioning
         self.image_processor = AutoImageProcessor.from_pretrained("MCG-NJU/videomae-base")
@@ -170,6 +170,7 @@ class Encoder(nn.Module) :
                  j_encoder_depth=3,
                  lifter_pretrained=os.path.join(PMCE_POSE_DIR, 'pose_3dpw.pth.tar')
                  ) :
+        super().__init__()
         self.temp_encoder = TempEncoder(seqlen=seqlen, embed_dim=embed_dim, mlp_hidden_dim=embed_dim*2, depth=t_encoder_depth)
         self.text_encoder = CaptionEncoder()
         self.lifter = JointEncoder(num_frames=seqlen, num_joints=num_joint, embed_dim=embed_dim, depth=j_encoder_depth, pretrained=lifter_pretrained)
