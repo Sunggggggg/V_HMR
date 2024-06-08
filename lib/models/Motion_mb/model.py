@@ -18,6 +18,7 @@ class Model(nn.Module):
                  attn_drop_rate=0., 
                  drop_path_rate=0.2) :
         super().__init__()
+        self.num_frames = num_frames
         self.mid_frame = num_frames // 2
         self.stride_short = 4
         self.joint_space = JointTree()
@@ -49,11 +50,23 @@ class Model(nn.Module):
         f = torch.sum(f * f_motion, dim=-2)          # [B, T, D]
 
         if is_train :
+            size = self.num_frames
             f_out = self.proj_global(f) # [B, T, 2048]
         else :
+            size = 1
             f_out = self.proj_global(f)[:, self.mid_frame][:, None, :] # [B, 1, 2048]
         
         smpl_output_global, pred_global = self.global_regressor(f_out, is_train=is_train, J_regressor=J_regressor)
+
+        scores = None
+        for s in smpl_output_global:
+            s['theta'] = s['theta'].reshape(B, size, -1)
+            s['verts'] = s['verts'].reshape(B, size, -1, 3)
+            s['kp_2d'] = s['kp_2d'].reshape(B, size, -1, 2)
+            s['kp_3d'] = s['kp_3d'].reshape(B, size, -1, 3)
+            s['rotmat'] = s['rotmat'].reshape(B, size, -1, 3, 3)
+            s['scores'] = scores
+
 
         f = self.proj_short(f)  # [B, T, d]
         f = f * f_context       # [B, T, d]
