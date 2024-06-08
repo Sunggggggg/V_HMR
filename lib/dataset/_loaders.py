@@ -96,7 +96,7 @@ def get_data_loaders(cfg):
 
     train_3d_loader = DataLoader(
         dataset=train_3d_db,
-        batch_size=64,
+        batch_size=cfg.TRAIN.BATCH_SIZE,
         shuffle=True,
         num_workers=cfg.NUM_WORKERS,
     )
