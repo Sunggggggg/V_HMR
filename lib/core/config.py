@@ -20,7 +20,7 @@ from yacs.config import CfgNode as CN
 
 # CONSTANTS
 # You may modify them at will
-GLoT_DB_DIR = '/mnt/SKY/data/preprocessed_data/FullFrame_normvp_r5064'
+GLoT_DB_DIR = '/mnt/SKY/data/V_HMR/preprocessed_data/FullFrame_normvp_r5064'
 PMCE_POSE_DIR = '/mnt/SKY/preprocessed_data/PMCE'
 AMASS_DIR = '/mnt/SKY/data/amass'
 INSTA_DIR = '/mnt/SKY/data/insta_variety'
