@@ -60,7 +60,7 @@ class CaptionEncoder(nn.Module):
             caption = self.tokenizer.batch_decode(tokens, skip_special_tokens=True)[0]
 
             # Text embedding
-            clip_token = clip.tokenize(caption)
+            clip_token = clip.tokenize(caption).cuda()
             f_text = self.clip_model.encode_text(clip_token)
             text_emb.append(f_text)
         
