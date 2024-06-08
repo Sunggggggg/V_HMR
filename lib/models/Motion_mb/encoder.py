@@ -134,7 +134,7 @@ class STEncoder(nn.Module):
         f = rearrange(f, 'b t j c  -> (b j) t c')   # [BJ, T, D]
         f = self.t_trans(f)
         f = self.pos_drop(f)
-        f = rearrange(f, '(b j) t c  -> b j t c', j=J)
+        f = rearrange(f, '(b j) t c  -> b t j c', j=J)
 
         return f
         
