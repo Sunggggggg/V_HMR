@@ -69,7 +69,6 @@ class CaptionEncoder(nn.Module):
 
     def forward(self, seq_path):
         f_text = self.video_caption(seq_path) # [B, 1, dim]
-
         return f_text
 
 class TEncoder(nn.Module):
