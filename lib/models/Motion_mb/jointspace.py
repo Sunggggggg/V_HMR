@@ -24,7 +24,7 @@ class JointTree(nn.Module) :
     def refine_joint(self, vitpose_2d) :
         vitpose_j2d_pelvis = vitpose_2d[:,:,[11,12],:2].mean(dim=2, keepdim=True) 
         vitpose_j2d_neck = vitpose_2d[:,:,[5,6],:2].mean(dim=2, keepdim=True)  
-        joint_2d_feats = torch.cat([vitpose_2d[... ,:2], vitpose_j2d_neck], dim=2)   # [B, T, J, 2]
+        joint_2d_feats = torch.cat([vitpose_2d[... ,:2], vitpose_j2d_pelvis, vitpose_j2d_neck], dim=2)   # [B, T, J, 2]
         joint_2d_feats = joint_2d_feats- vitpose_j2d_pelvis
         return joint_2d_feats
 
