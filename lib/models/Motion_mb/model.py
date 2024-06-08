@@ -35,12 +35,16 @@ class Model(nn.Module):
         
         self.proj_short = nn.Linear(embed_dim, embed_dim//2)
         self.local_regressor = Regressor(embed_dim//2)
-        
-    def forward(self, f_text, f_img, f_joint, is_train=False, J_regressor=None):
+    
+
+    def forward(self, f_text=None, f_img=None, f_joint=None, is_train=False, J_regressor=None):
         B = f_img.shape[0]
         f_joint = self.joint_space(f_joint[..., :2])
         # Global
-        f_text = self.text_emb(f_text)
+        if f_text is None :
+            f_text = torch.rand((1, 1, 512))
+        else :
+            f_text = self.text_emb(f_text)
         f_temp = self.t_trans(f_text, f_img)        # [B, T, D]
         f = self.s_trans(f_temp, f_joint)           # [B, T, J, D]
         f_motion = self.motion_enc(f_text, f_joint) # [B, 1, J, 1]
