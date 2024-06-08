@@ -55,7 +55,7 @@ class CaptionEncoder():
         text_emb = []
         for b in range(self.batch):
             b_frames = []
-            for path in frames[b*self.seqlen +6 : (b+1)*self.seqlen +9] :
+            for path in frames[b*self.seqlen +6 : (b+1)*self.seqlen-6] :
                 img = cv2.imread(path)
                 H, W = img.shape[:2]
                 H, W = H//4, W//4
