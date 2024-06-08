@@ -16,8 +16,10 @@ gen_kwargs = {
 }
 
 class CaptionEncoder(nn.Module):
-    def __init__(self) :
+    def __init__(self, batch, seqlen=16) :
         super().__init__()
+        self.batch = batch
+        self.seqlen = seqlen
         # Video captioning
         self.image_processor = AutoImageProcessor.from_pretrained("MCG-NJU/videomae-base")
         self.tokenizer = AutoTokenizer.from_pretrained("gpt2")
@@ -42,27 +44,33 @@ class CaptionEncoder(nn.Module):
                     frames.append(''.join(temp))
                 temp = []
                 continue
-        print(frames)
-        for path in frames :
-            img = cv2.imread(path)
-            H, W = img.shape[:2]
-            H, W = H//4, W//4
-            img = cv2.resize(img, (H, W), interpolation=cv2.INTER_AREA)
-            frames.append(img)
         
-        pixel_values = self.image_processor(frames, return_tensors="pt").pixel_values # [B, N, 3, H, W]
-        tokens = self.model.generate(pixel_values, **gen_kwargs)
-        caption = self.tokenizer.batch_decode(tokens, skip_special_tokens=True)
+        text_emb = []
+        for b in range(self.batch):
+            b_frames = []
+            for path in frames[b*self.seqlen : (b+1)*self.seqlen] :
+                img = cv2.imread(path)
+                H, W = img.shape[:2]
+                H, W = H//4, W//4
+                img = cv2.resize(img, (H, W), interpolation=cv2.INTER_AREA)
+                b_frames.append(img)
+        
+            pixel_values = self.image_processor(b_frames, return_tensors="pt").pixel_values # [B, N, 3, H, W]
+            tokens = self.model.generate(pixel_values, **gen_kwargs)
+            caption = self.tokenizer.batch_decode(tokens, skip_special_tokens=True)
 
-        del frames
+            # Text embedding
+            clip_token = self.clip.tokenize(caption)
+            f_text = self.clip.encode_text(clip_token)
+            text_emb.append(f_text)
+        
+        text_emb = torch.stack(text_emb, dim=0)
         return caption
 
     def forward(self, seq_path):
         caption = self.video_caption(seq_path) # [B, dim]
 
-        # Text embedding
-        clip_token = self.clip.tokenize(caption)
-        f_text = self.clip.encode_text(clip_token)
+        
         return f_text
 
 class TEncoder(nn.Module):

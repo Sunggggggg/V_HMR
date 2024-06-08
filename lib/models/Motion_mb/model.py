@@ -20,7 +20,7 @@ class Model(nn.Module):
         self.mid_frame = num_frames // 2
         self.stride_short = 4
 
-        self.text_emb = CaptionEncoder()
+        self.text_emb = CaptionEncoder(batch=64)
         self.t_trans = TEncoder(embed_dim=embed_dim)
         self.s_trans = STEncoder(depth=depth, embed_dim=embed_dim, mlp_ratio=mlp_ratio,
             num_heads=num_heads, drop_rate=drop_rate, drop_path_rate=drop_path_rate, 
