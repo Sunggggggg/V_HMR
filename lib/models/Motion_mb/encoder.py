@@ -78,7 +78,12 @@ class TEncoder(nn.Module):
         self.atten = CrossAttention(dim=embed_dim)
 
     def forward(self, f_text, f_img):
+        """
+        f_text : [B, 1, 512]
+        f_img : [B, T, 512]
+        """
         f_img = self.proj(f_img)
+        print(f_img.shape, f_text.shape)
         f = self.atten(f_img, f_text)
         return f
 
