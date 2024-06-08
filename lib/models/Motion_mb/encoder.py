@@ -28,12 +28,22 @@ class CaptionEncoder(nn.Module):
 
     def video_caption(self, seq_path):
         """
-        seq_path : list 16
+        seq_path : list 16 
+
         """
         frames = []
-        for path in seq_path :
-            path = path.detach().cpu().numpy().tobytes().decode('utf-8')
-            print(path)
+        temp = []
+        seq_path = seq_path.detach().cpu().numpy().tobytes().decode('utf-8')
+        for f in seq_path :
+            if f != '@':
+                temp.append(f)
+            else :
+                if len(temp) != 0 :
+                    frames.append(''.join(temp))
+                temp = []
+                continue
+            
+        for path in frames :
             img = cv2.imread(path)
             H, W = img.shape[:2]
             H, W = H//4, W//4
