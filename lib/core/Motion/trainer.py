@@ -24,6 +24,12 @@ from progress.bar import Bar
 
 from lib.core.config import BASE_DATA_DIR
 from lib.utils.utils import move_dict_to_device, AverageMeter
+from lib.utils.eval_utils import (
+    compute_accel,
+    compute_error_accel,
+    compute_error_verts,
+    batch_compute_similarity_transform_torch,
+)
 
 logger = logging.getLogger(__name__)
 
