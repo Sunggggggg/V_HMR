@@ -61,7 +61,7 @@ class CaptionEncoder(nn.Module):
 
             # Text embedding
             clip_token = clip.tokenize(caption).cuda()
-            f_text = self.clip_model.encode_text(clip_token)
+            f_text = self.clip_model.encode_text(clip_token).float()
             text_emb.append(f_text)
         
         text_emb = torch.stack(text_emb, dim=0)
