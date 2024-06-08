@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+from .jointspace import JointTree
 from .encoder import TEncoder, STEncoder, CaptionEncoder
 from .motion_encoder import MotionEncoder, ContextEncoder
 from .regressor import Regressor
@@ -19,6 +20,7 @@ class Model(nn.Module):
         super().__init__()
         self.mid_frame = num_frames // 2
         self.stride_short = 4
+        self.joint_space = JointTree()
 
         self.text_emb = CaptionEncoder(batch=64)
         self.t_trans = TEncoder(embed_dim=embed_dim)
@@ -36,6 +38,7 @@ class Model(nn.Module):
         
     def forward(self, f_text, f_img, f_joint, is_train=False, J_regressor=None):
         B = f_img.shape[0]
+        f_joint = self.joint_space(f_joint[..., :2])
         # Global
         f_text = self.text_emb(f_text)
         f_temp = self.t_trans(f_text, f_img)        # [B, T, D]
