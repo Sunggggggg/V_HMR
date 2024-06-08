@@ -55,7 +55,7 @@ class CaptionEncoder(nn.Module):
                 img = cv2.resize(img, (H, W), interpolation=cv2.INTER_AREA)
                 b_frames.append(img)
         
-            pixel_values = self.image_processor(b_frames, return_tensors="pt").pixel_values # [B, N, 3, H, W]
+            pixel_values = self.image_processor(b_frames, return_tensors="pt").pixel_values.cuda() # [B, N, 3, H, W]
             tokens = self.model.generate(pixel_values, **gen_kwargs)
             caption = self.tokenizer.batch_decode(tokens, skip_special_tokens=True)
 
@@ -68,9 +68,8 @@ class CaptionEncoder(nn.Module):
         return caption
 
     def forward(self, seq_path):
-        caption = self.video_caption(seq_path) # [B, dim]
+        f_text = self.video_caption(seq_path) # [B, 1, dim]
 
-        
         return f_text
 
 class TEncoder(nn.Module):
