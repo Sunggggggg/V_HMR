@@ -37,10 +37,7 @@ class Model(nn.Module):
         
         self.proj_short = nn.Linear(embed_dim, embed_dim//2)
         self.local_regressor = Regressor(embed_dim//2)
-
-        self.global_head = nn.Linear(num_joints, 1)
     
-
     def forward(self, f_text, f_img, f_joint, is_train=False, J_regressor=None):
         B, T = f_img.shape[:2]
         f_joint = self.joint_space(f_joint[..., :2])
@@ -48,12 +45,9 @@ class Model(nn.Module):
         f_text = self.text_emb(f_text)
         f_temp = self.t_trans(f_text, f_img)        # [B, T, D]
         f = self.s_trans(f_temp, f_joint)           # [B, T, J, D]
-        #f_motion = self.motion_enc(f_text, f_joint) # [B, 1, J, 1]
-        #f_context = self.context_enc(f_text, f_img) # [B, T, 1]
-        #f = torch.sum(f * f_motion, dim=-2)          # [B, T, D]
-
-        f = self.global_head(f.permute(0, 1, 3, 2))
-        f = f.view(B, T, -1)
+        f_motion = self.motion_enc(f_text, f_joint) # [B, 1, J, 1]
+        f_context = self.context_enc(f_text, f_img) # [B, T, 1]
+        f = torch.sum(f * f_motion, dim=-2)          # [B, T, D]
 
         if is_train :
             size = self.num_frames
@@ -75,7 +69,7 @@ class Model(nn.Module):
 
 
         f = self.proj_short(f)  # [B, T, d]
-        #f = f * f_context       # [B, T, d]
+        f = f * f_context       # [B, T, d]
         if is_train :
             f_out = f[:, self.mid_frame-1:self.mid_frame+2] # [B, 3, D]
         else :
