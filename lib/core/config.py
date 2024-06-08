@@ -20,16 +20,16 @@ from yacs.config import CfgNode as CN
 
 # CONSTANTS
 # You may modify them at will
-GLoT_DB_DIR = '/mnt/SKY/data/V_HMR/preprocessed_data/FullFrame_normvp_r5064'
-PMCE_POSE_DIR = '/mnt/SKY/preprocessed_data/PMCE'
+GLoT_DB_DIR = '/mnt/SKY/V_HMR/data/preprocessed_data/FullFrame_vitpose_r5064'
 AMASS_DIR = '/mnt/SKY/data/amass'
-INSTA_DIR = '/mnt/SKY/data/insta_variety'
-MPII3D_DIR = '/mnt/SKY/data/mpi_inf_3dhp'
-THREEDPW_DIR = '/mnt/SKY/data/3dpw'
+INSTA_DIR = '/mnt/SKY/data/V_HMR/insta_variety'
+MPII3D_DIR = '/mnt/SKY/data/V_HMR/mpi_inf_3dhp'
+THREEDPW_DIR = '/mnt/SKY/V_HMR/data/3dpw'
 H36M_DIR = '/mnt/SKY/data/h36m'
 PENNACTION_DIR = '/mnt/SKY/data/penn_action'
 POSETRACK_DIR = '/mnt/SKY/data/posetrack'
-BASE_DATA_DIR = '/mnt/SKY/data/base_data'
+BASE_DATA_DIR = '/mnt/SKY/V_HMR/data/base_data'
+
 
 # Configuration variables
 cfg = CN()
