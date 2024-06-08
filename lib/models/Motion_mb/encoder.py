@@ -65,7 +65,7 @@ class CaptionEncoder(nn.Module):
             text_emb.append(f_text)
         
         text_emb = torch.stack(text_emb, dim=0)
-        return caption
+        return text_emb
 
     def forward(self, seq_path):
         f_text = self.video_caption(seq_path) # [B, 1, dim]
