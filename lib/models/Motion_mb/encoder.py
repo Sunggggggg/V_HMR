@@ -42,7 +42,7 @@ class CaptionEncoder(nn.Module):
                     frames.append(''.join(temp))
                 temp = []
                 continue
-            
+        print(frames)
         for path in frames :
             img = cv2.imread(path)
             H, W = img.shape[:2]
