@@ -143,7 +143,7 @@ def checkpoint2model(checkpoint, key='gen_state_dict'):
 
 
 def get_optimizer(model, optim_type, lr, weight_decay, momentum):
-    params=[param for name, param in model.named_parameters() if 'CaptionEncoder' in name]
+    params=[param for name, param in model.named_parameters() if 'CaptionEncoder' not in name]
 
     if optim_type in ['sgd', 'SGD']:
         opt = torch.optim.SGD(lr=lr, params=params, momentum=momentum)
