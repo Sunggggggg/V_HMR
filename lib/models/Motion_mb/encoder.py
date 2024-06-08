@@ -31,6 +31,9 @@ class CaptionEncoder(nn.Module):
         self.clip_model, preprocess = clip.load("ViT-B/32")
         for param in self.clip_model.parameters():
             param.requires_grad = False
+        
+        self.model.eval()
+        self.clip_model.eval()
 
     def video_caption(self, seq_path):
         """

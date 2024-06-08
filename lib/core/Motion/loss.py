@@ -58,25 +58,15 @@ class Loss(nn.Module):
         self.criterion_accel = nn.MSELoss('none').to(self.device)
         self.criterion_attention = nn.CrossEntropyLoss()
 
-        # 
-        #self.criterion_entropy = nn.KLDivLoss()
-        self.criterion_entropy = nn.CosineSimilarity()
-
         self.enc_loss = batch_encoder_disc_l2_loss
         self.dec_loss = batch_adv_disc_l2_loss
 
     def forward(
             self,
-            generator_outputs_mae,
-            generator_outputs_short,
+            generator_outputs_global,
+            generator_outputs_local,
             data_2d,
             data_3d,
-            scores,
-            mask_ids=None,
-            data_body_mosh=None,
-            data_motion_mosh=None,
-            body_discriminator=None,
-            motion_discriminator=None,
     ):
         reduce = lambda x: x.contiguous().view((x.shape[0] * x.shape[1],) + x.shape[2:])
         flatten = lambda x: x.reshape(-1)
@@ -93,8 +83,8 @@ class Loss(nn.Module):
         w_smpl = data_3d['w_smpl'].type(torch.bool)
 
         # 
-        loss_kp_2d_mae, loss_kp_3d_mae, loss_accel_2d_mae, loss_accel_3d_mae, loss_pose_mae, loss_shape_mae  = self.cal_loss(sample_2d_count, \
-            real_2d, real_3d, real_3d_theta, w_3d, w_smpl, reduce, flatten, generator_outputs_mae, mask_ids)
+        loss_kp_2d_global, loss_kp_3d_global, loss_accel_2d_global, loss_accel_3d_global, loss_pose_global, loss_shape_global  = self.cal_loss(sample_2d_count, \
+            real_2d, real_3d, real_3d_theta, w_3d, w_smpl, reduce, flatten, generator_outputs_global)
 
         # 
         real_2d = real_2d[:, seq_len // 2 - 1: seq_len // 2 + 2]
@@ -102,33 +92,33 @@ class Loss(nn.Module):
         real_3d_theta = data_3d['theta'][:, seq_len // 2 - 1: seq_len // 2 + 2]
         w_3d = data_3d['w_3d'].type(torch.bool)[:, seq_len // 2 - 1: seq_len // 2 + 2]
         w_smpl = data_3d['w_smpl'].type(torch.bool)[:, seq_len // 2 - 1: seq_len // 2 + 2]
-        loss_kp_2d_short, loss_kp_3d_short, loss_accel_2d_short, loss_accel_3d_short, loss_pose_short, loss_shape_short = self.cal_loss(sample_2d_count, \
-            real_2d, real_3d, real_3d_theta, w_3d, w_smpl, reduce, flatten, generator_outputs_short)
+        loss_kp_2d_local, loss_kp_3d_local, loss_accel_2d_local, loss_accel_3d_local, loss_pose_local, loss_shape_local = self.cal_loss(sample_2d_count, \
+            real_2d, real_3d, real_3d_theta, w_3d, w_smpl, reduce, flatten, generator_outputs_local)
 
         loss_dict = {
-            'loss_kp_2d_mae': loss_kp_2d_mae,
-            'loss_kp_3d_mae': loss_kp_3d_mae,
-            'loss_kp_2d_short': loss_kp_2d_short,
-            'loss_kp_3d_short': loss_kp_3d_short,
-            'loss_accel_2d_mae': loss_accel_2d_mae, 
-            'loss_accel_3d_mae': loss_accel_3d_mae,
-            'loss_accel_2d_short': loss_accel_2d_short,
-            'loss_accel_3d_short': loss_accel_3d_short
+            'loss_kp_2d_global': loss_kp_2d_global,
+            'loss_kp_3d_global': loss_kp_3d_global,
+            'loss_kp_2d_local': loss_kp_2d_local,
+            'loss_kp_3d_local': loss_kp_3d_local,
+            'loss_accel_2d_global': loss_accel_2d_global, 
+            'loss_accel_3d_global': loss_accel_3d_global,
+            'loss_accel_2d_local': loss_accel_2d_local,
+            'loss_accel_3d_local': loss_accel_3d_local
         }
 
-        if loss_pose_mae is not None:
-            loss_dict['loss_pose_mae'] = loss_pose_mae
-            loss_dict['loss_pose_short'] = loss_pose_short
-            loss_dict['loss_shape_mae'] = loss_shape_mae
-            loss_dict['loss_shape_short'] = loss_shape_short
+        if loss_pose_global is not None:
+            loss_dict['loss_pose_global'] = loss_pose_global
+            loss_dict['loss_pose_local'] = loss_pose_local
+            loss_dict['loss_shape_global'] = loss_shape_global
+            loss_dict['loss_shape_local'] = loss_shape_local
             
         gen_loss = torch.stack(list(loss_dict.values())).sum()
 
         return gen_loss, loss_dict
 
-    def cal_loss(self, sample_2d_count, real_2d, real_3d, real_3d_theta, w_3d, w_smpl, reduce, flatten, generator_outputs, mask_ids=None, short_flag=False):
+    def cal_loss(self, sample_2d_count, real_2d, real_3d, real_3d_theta, w_3d, w_smpl, reduce, flatten, generator_outputs, mask_ids=None, local_flag=False):
         seq_len = real_2d.shape[1]
-        if not short_flag:
+        if not local_flag:
             if self.use_accel:
                 real_accel_2d, real_accel_3d = self.get_accel_input(real_2d, real_3d, seq_len, reduce, conf_2d_flag=True)
             else:
@@ -150,7 +140,7 @@ class Loss(nn.Module):
         pred_theta = reduce(pred_theta)
         pred_theta = pred_theta[w_smpl]
         
-        if not short_flag:
+        if not local_flag:
             if self.use_accel:
                 preds_accel_2d, preds_accel_3d = self.get_accel_input(preds['kp_2d'], pred_j3d, seq_len, reduce)
             else:
@@ -159,7 +149,7 @@ class Loss(nn.Module):
         pred_j2d = reduce(preds['kp_2d'])
         pred_j3d = reduce(pred_j3d)
         pred_j3d = pred_j3d[w_3d]
-        if not short_flag:
+        if not local_flag:
             real_accel_3d = real_accel_3d[w_3d]
             preds_accel_3d = preds_accel_3d[w_3d]
         if mask_ids is not None:
@@ -174,7 +164,7 @@ class Loss(nn.Module):
         # Generator Loss
         loss_kp_2d = self.keypoint_loss(pred_j2d, real_2d, openpose_weight=1., gt_weight=1., mask_2d_3d=mask_2d_3d) * self.e_loss_weight
         loss_kp_3d = self.keypoint_3d_loss(pred_j3d, real_3d, mask_3d=mask_3d_kp)
-        if not short_flag:
+        if not local_flag:
             loss_accel_2d = self.keypoint_loss(preds_accel_2d, real_accel_2d, openpose_weight=1., gt_weight=1., mask_2d_3d=mask_2d_3d) * self.vel_or_accel_2d_weight
             loss_accel_3d = self.accel_3d_loss(preds_accel_3d, real_accel_3d, mask_3d=mask_3d_kp) * self.vel_or_accel_3d_weight
         else:
@@ -195,6 +185,7 @@ class Loss(nn.Module):
             loss_shape = None
         return loss_kp_2d, loss_kp_3d, loss_accel_2d, loss_accel_3d, loss_pose, loss_shape
 
+    
 
     def get_accel_input(self, pose_2d, pose_3d, seq_len, reduce, conf_2d_flag=False):
         x0_2d = pose_2d[:, : seq_len - 2]
@@ -219,7 +210,6 @@ class Loss(nn.Module):
         accel_2d = reduce(accel_2d)
         accel_3d = reduce(accel_3d)
         return accel_2d, accel_3d
-    
     def get_vel_input(self, pose_2d, pose_3d, seq_len, reduce, conf_2d_flag=False):
         x0_2d = pose_2d[:, :-1]
         x1_2d = pose_2d[:, 1:]
@@ -324,7 +314,7 @@ class Loss(nn.Module):
             loss_regr_betas = torch.FloatTensor(1).fill_(0.).to(self.device)
         return loss_regr_pose, loss_regr_betas
 
-    
+
 def batch_encoder_disc_l2_loss(disc_value):
     '''
         Inputs:
