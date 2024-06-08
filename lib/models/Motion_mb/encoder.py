@@ -26,7 +26,7 @@ class CaptionEncoder(nn.Module):
         self.model = VisionEncoderDecoderModel.from_pretrained("Neleac/timesformer-gpt2-video-captioning")
 
         # Clip
-        self.clip = clip.load("ViT-B/32")
+        self.clip_model, preprocess = clip.load("ViT-B/32")
 
     def video_caption(self, seq_path):
         """
@@ -57,11 +57,11 @@ class CaptionEncoder(nn.Module):
         
             pixel_values = self.image_processor(b_frames, return_tensors="pt").pixel_values.cuda() # [B, N, 3, H, W]
             tokens = self.model.generate(pixel_values, **gen_kwargs)
-            caption = self.tokenizer.batch_decode(tokens, skip_special_tokens=True)
+            caption = self.tokenizer.batch_decode(tokens, skip_special_tokens=True)[0]
 
             # Text embedding
-            clip_token = self.clip.tokenize(caption)
-            f_text = self.clip.encode_text(clip_token)
+            clip_token = clip.tokenize(caption)
+            f_text = self.clip_model.encode_text(clip_token)
             text_emb.append(f_text)
         
         text_emb = torch.stack(text_emb, dim=0)
