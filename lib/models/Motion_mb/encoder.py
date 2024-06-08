@@ -24,9 +24,13 @@ class CaptionEncoder(nn.Module):
         self.image_processor = AutoImageProcessor.from_pretrained("MCG-NJU/videomae-base")
         self.tokenizer = AutoTokenizer.from_pretrained("gpt2")
         self.model = VisionEncoderDecoderModel.from_pretrained("Neleac/timesformer-gpt2-video-captioning")
-
+        for param in self.model.parameters():
+            param.requires_grad = False
+        
         # Clip
         self.clip_model, preprocess = clip.load("ViT-B/32")
+        for param in self.clip_model.parameters():
+            param.requires_grad = False
 
     def video_caption(self, seq_path):
         """
@@ -68,7 +72,8 @@ class CaptionEncoder(nn.Module):
         return text_emb
 
     def forward(self, seq_path):
-        f_text = self.video_caption(seq_path) # [B, 1, dim]
+        with torch.no_grad():
+            f_text = self.video_caption(seq_path) # [B, 1, dim]
         return f_text
 
 class TEncoder(nn.Module):
