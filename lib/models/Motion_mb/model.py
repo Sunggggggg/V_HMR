@@ -16,15 +16,14 @@ class Model(nn.Module):
                  mlp_ratio=2., 
                  drop_rate=0., 
                  attn_drop_rate=0., 
-                 drop_path_rate=0.2,
-                 batch_size=32) :
+                 drop_path_rate=0.2
+                 ) :
         super().__init__()
         self.num_frames = num_frames
         self.mid_frame = num_frames // 2
         self.stride_short = 4
         self.joint_space = JointTree()
 
-        self.text_emb = CaptionEncoder(batch=batch_size)
         self.t_trans = TEncoder(embed_dim=embed_dim)
         self.s_trans = STEncoder(depth=depth, embed_dim=embed_dim, mlp_ratio=mlp_ratio,
             num_heads=num_heads, drop_rate=drop_rate, drop_path_rate=drop_path_rate, 
@@ -42,7 +41,6 @@ class Model(nn.Module):
         B, T = f_img.shape[:2]
         f_joint = self.joint_space(f_joint[..., :2])
         # Global
-        f_text = self.text_emb(f_text)
         f_temp = self.t_trans(f_text, f_img)        # [B, T, D]
         f = self.s_trans(f_temp, f_joint)           # [B, T, J, D]
         f_motion = self.motion_enc(f_text, f_joint) # [B, 1, J, 1]

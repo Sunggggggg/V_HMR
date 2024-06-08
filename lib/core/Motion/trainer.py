@@ -40,6 +40,7 @@ class Trainer():
             cfg,
             data_loaders,
             generator,
+            text_model,
             gen_optimizer,
             criterion,
             lr_scheduler=None,
@@ -66,6 +67,7 @@ class Trainer():
             self.train_3d_iter = iter(self.train_3d_loader)
 
         # Models and optimizers
+        self.text_model = text_model
         self.generator = generator
         self.gen_optimizer = gen_optimizer
 
@@ -164,7 +166,8 @@ class Trainer():
             timer['data'] = time.time() - start
             start = time.time()
 
-            smpl_output, smpl_output_global = self.generator(input_path, input_feat, input_pose, is_train=True)
+            f_text = self.text_model.textemb(input_path)
+            smpl_output, smpl_output_global = self.generator(f_text, input_feat, input_pose, is_train=True)
             timer['forward'] = time.time() - start
             start = time.time()
 

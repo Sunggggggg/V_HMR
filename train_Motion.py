@@ -17,6 +17,7 @@ from lib.utils.utils import create_logger, get_optimizer
 from lib.core.Motion.loss import Loss
 from lib.core.Motion.trainer import Trainer
 from lib.models.Motion_mb.model import Model
+from lib.models.Motion_mb.encoder import CaptionEncoder
 from lr_scheduler import CosineAnnealingWarmupRestarts
 
 def main(cfg):
@@ -56,7 +57,9 @@ def main(cfg):
         use_accel = cfg.LOSS.use_accel
     )
 
-    model = Model(batch_size=cfg.TRAIN.BATCH_SIZE).to(cfg.DEVICE)
+    model = Model().to(cfg.DEVICE)
+    text_model = CaptionEncoder(batch=cfg.TRAIN.BATCH_SIZE)
+
     logger.info(f'net: {model}')
 
     net_params = sum(map(lambda x: x.numel(), model.parameters()))
@@ -81,6 +84,7 @@ def main(cfg):
         cfg=cfg,
         data_loaders=data_loaders,
         generator=model,
+        text_model=text_model,
         criterion=loss,
         gen_optimizer=gen_optimizer,
         lr_scheduler=lr_scheduler,

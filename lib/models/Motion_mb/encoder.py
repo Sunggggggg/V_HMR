@@ -15,7 +15,7 @@ gen_kwargs = {
     "num_beams": 8,
 }
 
-class CaptionEncoder(nn.Module):
+class CaptionEncoder():
     def __init__(self, batch, seqlen=16) :
         super().__init__()
         self.batch = batch
@@ -32,8 +32,8 @@ class CaptionEncoder(nn.Module):
         for param in self.clip_model.parameters():
             param.requires_grad = False
         
-        self.model.eval()
-        self.clip_model.eval()
+        self.model.eval().cuda()
+        self.clip_model.eval().cuda()
 
     def video_caption(self, seq_path):
         """
@@ -74,7 +74,7 @@ class CaptionEncoder(nn.Module):
         text_emb = torch.stack(text_emb, dim=0)
         return text_emb
 
-    def forward(self, seq_path):
+    def textemb(self, seq_path):
         with torch.no_grad():
             f_text = self.video_caption(seq_path) # [B, 1, dim]
         return f_text
