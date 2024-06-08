@@ -28,8 +28,9 @@ class Model(nn.Module):
         self.s_trans = STEncoder(depth=depth, embed_dim=embed_dim, mlp_ratio=mlp_ratio,
             num_heads=num_heads, drop_rate=drop_rate, drop_path_rate=drop_path_rate, 
             attn_drop_rate=attn_drop_rate)
-        self.motion_enc = MotionEncoder(num_frames, embed_dim)
-        self.context_enc = ContextEncoder(embed_dim)
+        #self.motion_enc = MotionEncoder(num_frames, embed_dim)
+        #self.context_enc = ContextEncoder(embed_dim)
+        self.global_head = nn.Linear(num_joints, 1)
 
         self.proj_global = nn.Linear(embed_dim, 2048)
         self.global_regressor = Regressor(2048)
@@ -43,9 +44,10 @@ class Model(nn.Module):
         # Global
         f_temp = self.t_trans(f_text, f_img)        # [B, T, D]
         f = self.s_trans(f_temp, f_joint)           # [B, T, J, D]
-        f_motion = self.motion_enc(f_text, f_joint) # [B, 1, J, 1]
-        f_context = self.context_enc(f_text, f_img) # [B, T, 1]
-        f = torch.sum(f * f_motion, dim=-2)          # [B, T, D]
+        f = self.global_head(f.permute(0, 1, 3, 2)).squeeze() #
+        #f_motion = self.motion_enc(f_text, f_joint) # [B, 1, J, 1]
+        #f_context = self.context_enc(f_text, f_img) # [B, T, 1]
+        #f = torch.sum(f * f_motion, dim=-2)          # [B, T, D]
 
         if is_train :
             size = self.num_frames
@@ -67,7 +69,7 @@ class Model(nn.Module):
 
 
         f = self.proj_short(f)  # [B, T, d]
-        f = f * f_context       # [B, T, d]
+        #f = f * f_context       # [B, T, d]
         if is_train :
             f_out = f[:, self.mid_frame-1:self.mid_frame+2] # [B, 3, D]
         else :
