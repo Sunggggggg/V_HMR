@@ -83,7 +83,6 @@ class TEncoder(nn.Module):
         f_img : [B, T, 512]
         """
         f_img = self.proj(f_img)
-        print(f_img.shape, f_text.shape)
         f = self.atten(f_img, f_text)
         return f
 
