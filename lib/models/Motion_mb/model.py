@@ -16,14 +16,15 @@ class Model(nn.Module):
                  mlp_ratio=2., 
                  drop_rate=0., 
                  attn_drop_rate=0., 
-                 drop_path_rate=0.2) :
+                 drop_path_rate=0.2,
+                 batch_size=32) :
         super().__init__()
         self.num_frames = num_frames
         self.mid_frame = num_frames // 2
         self.stride_short = 4
         self.joint_space = JointTree()
 
-        self.text_emb = CaptionEncoder(batch=2)
+        self.text_emb = CaptionEncoder(batch=batch_size)
         self.t_trans = TEncoder(embed_dim=embed_dim)
         self.s_trans = STEncoder(depth=depth, embed_dim=embed_dim, mlp_ratio=mlp_ratio,
             num_heads=num_heads, drop_rate=drop_rate, drop_path_rate=drop_path_rate, 

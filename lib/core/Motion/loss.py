@@ -111,7 +111,7 @@ class Loss(nn.Module):
             loss_dict['loss_pose_local'] = loss_pose_local
             loss_dict['loss_shape_global'] = loss_shape_global
             loss_dict['loss_shape_local'] = loss_shape_local
-            
+        print(loss_dict)
         gen_loss = torch.stack(list(loss_dict.values())).sum()
 
         return gen_loss, loss_dict

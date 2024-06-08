@@ -20,7 +20,7 @@ LOSS:
   use_accel: False
 TRAIN:
   val_epoch: 25
-  BATCH_SIZE: 2
+  BATCH_SIZE: 32
   NUM_ITERS_PER_EPOCH: 1000
   #PRETRAINED: '/mnt/SKY/GLoT_ViTPose/experiments/06-05-2024_17-24-39_Context_Token_LQ/checkpoint.pth.tar' # for testing
   #PRETRAINED_REGRESSOR: '/mnt/SKY/preprocessed_data/spin_model_checkpoint.pth.tar' # your path

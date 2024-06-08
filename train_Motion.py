@@ -56,7 +56,7 @@ def main(cfg):
         use_accel = cfg.LOSS.use_accel
     )
 
-    model = Model().to(cfg.DEVICE)
+    model = Model(batch_size=cfg.TRAIN.BATCH_SIZE).to(cfg.DEVICE)
     logger.info(f'net: {model}')
 
     net_params = sum(map(lambda x: x.numel(), model.parameters()))
