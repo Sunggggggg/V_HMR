@@ -52,15 +52,22 @@ class Regressor(nn.Module):
         batch_size = x.shape[0]
         if init_pose is None:
             init_pose = self.init_pose.expand(batch_size, -1)
+        else : 
+            init_pose = init_pose.reshape(-1, init_pose.size(-1))
         if init_shape is None:
             init_shape = self.init_shape.expand(batch_size, -1)
+        else : 
+            init_shape = init_shape.reshape(-1, init_shape.size(-1))
         if init_cam is None:
             init_cam = self.init_cam.expand(batch_size, -1)
+        else : 
+            init_cam = init_cam.reshape(-1, init_cam.size(-1))
 
         pred_pose = init_pose
         pred_shape = init_shape
         pred_cam = init_cam
         for i in range(n_iter):
+            print(x.shape, pred_pose.shape)
             xc = torch.cat([x, pred_pose, pred_shape, pred_cam], 1)
             xc = self.fc1(xc)
             xc = self.drop1(xc)

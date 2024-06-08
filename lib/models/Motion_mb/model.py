@@ -49,7 +49,6 @@ class Model(nn.Module):
         f = self.s_trans(f_temp, f_joint)           # [B, T, J, D]
         f_motion = self.motion_enc(f_text, f_joint) # [B, 1, J, 1]
         f_context = self.context_enc(f_text, f_img) # [B, T, 1]
-
         f = torch.sum(f * f_motion, dim=-2)          # [B, T, D]
 
         if is_train :
@@ -59,13 +58,13 @@ class Model(nn.Module):
         
         smpl_output_global, pred_global = self.global_regressor(f_out, is_train=is_train, J_regressor=J_regressor)
 
-        f = self.proj_short(f)
-        f = torch.sum(f * f_context, dim=-1, keepdim=True)  # [B, T, D]
+        f = self.proj_short(f)  # [B, T, d]
+        f = f * f_context       # [B, T, d]
         if is_train :
             f_out = f[:, self.mid_frame-1:self.mid_frame+2] # [B, 3, D]
         else :
             f_out = f[:, self.mid_frame][:, None, :]        # [B, 1, D]
-        smpl_output = self.local_regressor(f_out, init_pose=pred_global[0], init_shape=pred_global[1], init_cam=pred_global[2], is_train=is_train, J_regressor=J_regressor)
+        smpl_output, _ = self.local_regressor(f_out, init_pose=pred_global[0], init_shape=pred_global[1], init_cam=pred_global[2], is_train=is_train, J_regressor=J_regressor)
         
         scores = None
         if not is_train:
