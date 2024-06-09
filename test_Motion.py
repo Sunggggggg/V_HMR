@@ -16,7 +16,6 @@ from lib.models.smpl import SMPL_MODEL_DIR, SMPL, H36M_TO_J14
 from lib.utils.demo_utils import convert_crop_cam_to_orig_img, images_to_video
 from lib.utils.eval_utils import compute_accel, compute_error_accel, batch_compute_similarity_transform_torch, compute_error_verts, compute_errors, plot_accel
 from lib.utils.slerp_filter_utils import quaternion_from_matrix, quaternion_slerp, quaternion_matrix
-from lib.utils.renderer import Renderer
 from lib.models.Motion_mb.no_caption import Model
 
 def get_sequence(start_index, end_index, seqlen=16):
@@ -225,114 +224,11 @@ if __name__ == "__main__":
                 pred_thetas.append(pred_theta)
                 # scores.append(score)
 
-            # temporal smoothing post-processing following MEVA (https://github.com/ZhengyiLuo/MEVA)
-            if avg_filter:
-                # slerp avg filter
-                pred_thetas = np.vstack(pred_thetas).astype(np.float32)
-                pred_rotmats = np.vstack(pred_rotmats)
-                pred_rotmats = smooth_pose_mat(np.array(pred_rotmats), ratio=0.3).astype(np.float32)
-
-                smpl = SMPL(model_path=SMPL_MODEL_DIR)
-                smpl_output = smpl(
-                    betas=torch.from_numpy(pred_thetas[:, 75:]),
-                    body_pose=torch.from_numpy(pred_rotmats[:, 1:]),
-                    global_orient=torch.from_numpy(pred_rotmats[:, 0:1]),
-                    pose2rot=False,
-                )
-                filtered_pred_verts = smpl_output.vertices
-                # for render
-                pred_vertes = filtered_pred_verts
-                J_regressor_batch = J_regressor[None, :].expand(filtered_pred_verts.shape[0], -1, -1)
-                pred_joints = torch.matmul(J_regressor_batch, filtered_pred_verts)
-                pred_j3ds = pred_joints[:, H36M_TO_J14, :].detach().cpu().numpy()
-            else:
-                try:
-                    pred_j3ds = np.vstack(pred_j3ds)
-                    # scores = np.vstack(scores)
-                except:
-                    import pdb; pdb.set_trace()
-
             target_j3ds = dataset_data[seq_name]['joints3D']
             pred_verts = np.vstack(pred_verts)
             dummy_cam = np.repeat(np.array([[1., 0., 0.]]), len(target_j3ds), axis=0)
             target_theta = np.concatenate([dummy_cam, dataset_data[seq_name]['pose'], dataset_data[seq_name]['shape']], axis=1).astype(np.float32)
             target_j3ds, target_theta = target_j3ds[:len(pred_j3ds)], target_theta[:len(pred_j3ds)]
-
-            """ Rendering """
-            if render:
-                num_frames_to_render = 200
-                imgname = dataset_data[seq_name]['imgname']
-                bbox = dataset_data[seq_name]['bbox']
-                pred_cam = np.vstack(pred_thetas).astype(np.float32)[:, :3]
-                img = cv2.imread(imgname[0])
-                orig_height, orig_width = img.shape[:2]
-                renderer = Renderer(resolution=(orig_width, orig_height), orig_img=True, wireframe=False)
-
-                if target_dataset == 'h36m':
-                    seq_name = seq_name.split('/')[-1]
-                if render_plain:
-                    save_seq_name = f'{seq_name}_plain'
-                elif only_img:
-                    save_seq_name = f'{seq_name}_input'
-                else:
-                    save_seq_name = seq_name
-                save_seq_name = 'GLoT_' + save_seq_name + '_' + str(render_frame_start)
-
-                count = 0
-                for ii in tqdm(range(len(imgname))):
-                    frame_i = int(imgname[ii].split('_')[-1][:-4])
-                    if (frame_i < render_frame_start) or (frame_i > render_frame_start+num_frames_to_render):
-                        continue
-                    count += 1
-
-                    Path(osp.join(out_dir, save_seq_name)).mkdir(parents=True, exist_ok=True)
-
-                    bbox_ii = bbox[0:1].copy() if render_plain else bbox[ii:ii + 1]
-                    bbox_ii[:, 2:] = bbox_ii[:, 2:] * 1.2
-                    img_path = imgname[ii]
-                    img = cv2.imread(img_path)
-                    cam = np.array([[1, 0, 0]]) if render_plain else pred_cam[ii:ii + 1]
-                    orig_cam = convert_crop_cam_to_orig_img(
-                        cam=cam,
-                        bbox=bbox_ii,
-                        img_width=orig_width,
-                        img_height=orig_height
-                    )
-
-                    if not only_img:
-                        try:
-                            if render_plain:
-                                img[:] = 0
-                            img = renderer.render(
-                                img,
-                                pred_verts[ii],
-                                cam=orig_cam[0],
-                                color=[1.0, 1.0, 0.9],
-                                mesh_filename=None,
-                                rotate=False
-                            )
-                        except:
-                            print("Error on rendering! Exiting...")
-                            import sys; sys.exit()
-                    # resize image to save storage
-                    h, w = img.shape[:2]
-                    new_h, new_w = int(h/2), int(w/2)
-                    new_h, new_w = new_h if new_h % 2 == 0 else new_h-1, new_w if new_w % 2 == 0 else new_w-1  # for ffmpeg
-                    img = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
-                    new_height, new_width = img.shape[:2]
-
-                    # plot attention weights
-                    # cv2.putText(img, f'past: {str(scores[count-1][0].round(3))}', (new_width-110, 20), cv2.FONT_HERSHEY_PLAIN, 0.8, (255,255,255))
-                    # cv2.putText(img, f'current: {str(scores[count-1][1].round(3))}', (new_width-110, 40), cv2.FONT_HERSHEY_PLAIN, 0.8, (255,255,255))
-                    # cv2.putText(img, f'future: {str(scores[count-1][2].round(3))}', (new_width-110, 60), cv2.FONT_HERSHEY_PLAIN, 0.8, (255,255,255))
-
-                    cv2.imwrite(osp.join(out_dir, save_seq_name, f'{count:06d}.jpg'), img)
-
-                save_path = osp.join(out_dir, 'video', save_seq_name + ".mp4")
-                Path(osp.join(out_dir, 'video')).mkdir(parents=True, exist_ok=True)
-                print(f"Saving result video to {osp.abspath(save_path)}")
-                images_to_video(img_folder=osp.join(out_dir, save_seq_name), output_vid_file=save_path)
-                shutil.rmtree(osp.join(out_dir, save_seq_name))
 
             if 'mpii3d' in data_path:
                 target_j3ds = convert_kps(target_j3ds, src='spin', dst='mpii3d_test')
