@@ -60,6 +60,7 @@ def main(cfg):
 
     model = Model().to(cfg.DEVICE)
     #text_model = CaptionEncoder(batch=cfg.TRAIN.BATCH_SIZE)
+    text_model = None
 
     logger.info(f'net: {model}')
 
