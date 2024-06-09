@@ -6,7 +6,7 @@ from einops import rearrange
 from transformers import AutoImageProcessor, AutoTokenizer, VisionEncoderDecoderModel
 
 from .transformer import Transformer
-from lib.models.trans_operator import CrossAttention
+from lib.models.trans_operator import CrossAttention, Block
  
 # generate caption
 gen_kwargs = {
@@ -98,7 +98,7 @@ class STEncoder(nn.Module):
     def __init__(self, 
                  num_frames=16,
                  num_joints=19,
-                 embed_dim=256, 
+                 embed_dim=512, 
                  depth=3, 
                  num_heads=8, 
                  mlp_ratio=2, 
@@ -107,21 +107,31 @@ class STEncoder(nn.Module):
                  drop_path_rate=0.2
                  ) :
         super().__init__()
+        self.depth = depth
+
         self.joint_embed = nn.Linear(2, embed_dim)
+        self.img_embed = nn.Linear(embed_dim, embed_dim)
+
         self.temp_embed = nn.Linear(embed_dim, embed_dim)
-        self.norm = nn.LayerNorm(embed_dim)
+        self.s_norm = nn.LayerNorm(embed_dim)
+        self.t_norm = nn.LayerNorm(embed_dim)
 
         self.spatial_pos_embed = nn.Parameter(torch.zeros(1, num_joints, embed_dim))
         self.temporal_pos_embed = nn.Parameter(torch.zeros(1, num_frames, embed_dim))
         self.pos_drop = nn.Dropout(p=drop_rate)
 
-        self.s_trans = Transformer(depth=depth, embed_dim=embed_dim, mlp_hidden_dim=embed_dim*mlp_ratio,
-            h=num_heads, drop_rate=drop_rate, drop_path_rate=drop_path_rate, 
-            attn_drop_rate=attn_drop_rate, length=num_joints)
+        dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  
+        self.s_blocks = nn.ModuleList([
+            Block(
+                dim=embed_dim, num_heads=num_heads, mlp_hidden_dim=embed_dim*mlp_ratio,
+                drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i])
+            for i in range(depth)])
         
-        self.t_trans = Transformer(depth=depth, embed_dim=embed_dim, mlp_hidden_dim=embed_dim*mlp_ratio,
-            h=num_heads, drop_rate=drop_rate, drop_path_rate=drop_path_rate, 
-            attn_drop_rate=attn_drop_rate, length=num_frames)
+        self.t_blocks = nn.ModuleList([
+            Block(
+                dim=embed_dim, num_heads=num_heads, mlp_hidden_dim=embed_dim*mlp_ratio,
+                drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i])
+            for i in range(depth)])
 
     def forward(self, f_temp, f_joint):
         """
@@ -129,23 +139,37 @@ class STEncoder(nn.Module):
         f_joint : [B, T, J, 2]
         """
         B, T, J, _ = f_joint.shape
+        f_joint = self.joint_embed(f_joint)         # [B, T, J, D]
+        f_temp = self.img_embed(f_temp)[:, :, None] # [B, T, 1, D]
+        f = f_joint + f_temp                        # [B, T, J, D]
+
         # Spatial
-        f_joint = self.joint_embed(f_joint) # [B, T, J, D]
-        f_joint = rearrange(f_joint, 'b t j c  -> (b t) j c')
-        f_joint = self.s_trans(f_joint, self.spatial_pos_embed)
-        f_joint = self.pos_drop(f_joint)
-        f_joint = rearrange(f_joint, '(b t) j c -> b t j c', t=T)
+        f = rearrange(f, 'b t j c  -> (b t) j c')   # [BT, J, D]
+        f = f + self.spatial_pos_embed
+        f = self.pos_drop(f)
+        f = self.s_blocks[0](f)                     # [BT, J, D]
+        f = self.s_norm(f)
 
         # Temporal
-        f_temp = self.temp_embed(f_temp)
-        f_temp = f_temp[:, :, None]     # [B, T, 1, D]
-        f = f_temp + f_joint            # [B, T, J, D]
-        f = self.norm(f)
-        
-        f = rearrange(f, 'b t j c  -> (b j) t c')   # [BJ, T, D]
-        f = self.t_trans(f)
+        f = rearrange(f, '(b t) j c -> (b j) t c', t=T) #[BJ, T, D]
+        f = f + self.temporal_pos_embed             # [BJ, T, D]
         f = self.pos_drop(f)
-        f = rearrange(f, '(b j) t c  -> b t j c', j=J)
+        f = self.t_blocks[0](f)                     # [BJ, T, D]
+        f = self.t_norm(f)
 
+        # Loop
+        for i in range(1, self.depth):
+            s_block = self.s_blocks[i]
+            t_block = self.t_blocks[i]
+
+            f = rearrange(f, '(b j) t c -> (b t) j c', j=J)
+            f = s_block(f)
+            f = self.s_norm(f)
+
+            f = rearrange(f, '(b t) j c -> (b j) t c', t=T)
+            f = t_block(f)
+            f = self.t_norm(f)
+
+        f = rearrange(f, '(b j) t c -> b t j c', j=J)
         return f
         

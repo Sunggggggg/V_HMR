@@ -99,6 +99,7 @@ def get_data_loaders(cfg):
         batch_size=cfg.TRAIN.BATCH_SIZE,
         shuffle=True,
         num_workers=cfg.NUM_WORKERS,
+        drop_last=True
     )
 
     # exclude motion discriminator
