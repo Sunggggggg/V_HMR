@@ -164,7 +164,9 @@ if __name__ == "__main__":
             'vid_name': dataset_data['vid_name'][indexes][valids],
             'imgname': dataset_data['img_name'][indexes][valids],
             'bbox': dataset_data['bbox'][indexes][valids],
+            'vitpose_j2d': dataset_data['vitpose_joint2d'][indexes][valids].astype('float32')
         }
+        
         if 'mpii3d' in data_path:
             data_keyed[u_n]['pose'] = np.zeros((len(valids), 72))
             data_keyed[u_n]['shape'] = np.zeros((len(valids), 10))
