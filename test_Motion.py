@@ -125,7 +125,8 @@ if __name__ == "__main__":
     Path(out_dir).mkdir(parents=True, exist_ok=True)
 
     if target_dataset == '3dpw':
-        data_path = f'/mnt/SKY/data/preprocessed_data/FullFrame_vitpose_r5064/{target_dataset}_{set}_db_clip.pt'  #
+        #data_path = f'/mnt/SKY/data/preprocessed_data/FullFrame_vitpose_r5064/{target_dataset}_{set}_db_clip.pt'  #
+        data_path = f'/home/dev4/data/SKY/V_HMR/data/preprocessed_data/FullFrame_vitpose_r5064/{target_dataset}_{set}_db_clip.pt'
     elif target_dataset == 'h36m':
         if cfg.TITLE == 'repr_table4_h36m_mpii3d_model':
             data_path = f'/mnt/SKY/preprocessed_data/{target_dataset}_{set}_25fps_db_clip.pt'  # Table 4
