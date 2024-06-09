@@ -166,8 +166,13 @@ class Trainer():
             timer['data'] = time.time() - start
             start = time.time()
 
-            f_text = self.text_model.textemb(input_path)
-            smpl_output, smpl_output_global = self.generator(f_text, input_feat, input_pose, is_train=True)
+            if False :
+                f_text = self.text_model.textemb(input_path)
+                smpl_output, smpl_output_global = self.generator(f_text, input_feat, input_pose, is_train=True)
+            else : 
+                f_text = None
+                smpl_output, smpl_output_global = self.generator(input_feat, input_pose, is_train=True)
+            
             timer['forward'] = time.time() - start
             start = time.time()
 

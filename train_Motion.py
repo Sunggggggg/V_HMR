@@ -16,7 +16,8 @@ from lib.dataset._loaders import get_data_loaders
 from lib.utils.utils import create_logger, get_optimizer
 from lib.core.Motion.loss import Loss
 from lib.core.Motion.trainer import Trainer
-from lib.models.Motion_mb.model import Model
+#from lib.models.Motion_mb.model import Model
+from lib.models.Motion_mb.no_caption import Model
 from lib.models.Motion_mb.encoder import CaptionEncoder
 from lr_scheduler import CosineAnnealingWarmupRestarts
 
@@ -58,7 +59,7 @@ def main(cfg):
     )
 
     model = Model().to(cfg.DEVICE)
-    text_model = CaptionEncoder(batch=cfg.TRAIN.BATCH_SIZE)
+    #text_model = CaptionEncoder(batch=cfg.TRAIN.BATCH_SIZE)
 
     logger.info(f'net: {model}')
 
