@@ -9,7 +9,7 @@ from pathlib import Path
 from tqdm import tqdm
 from collections import defaultdict
 import importlib
-from lib.core.config import BASE_DATA_DIR, parse_args
+from lib.core.Motion.config import BASE_DATA_DIR, parse_args
 from lib.data_utils._img_utils import split_into_chunks_test
 from lib.data_utils._kp_utils import convert_kps
 from lib.models.smpl import SMPL_MODEL_DIR, SMPL, H36M_TO_J14
