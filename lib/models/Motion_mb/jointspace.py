@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-class JointTree(nn.Module) :
+class JointTree() :
     def __init__(self, ) :
         super().__init__()
         self.pelvis_index = 17
@@ -18,8 +18,6 @@ class JointTree(nn.Module) :
         y = rho * torch.sin(phi)
         return torch.stack([x, y], dim=-1)
         
-    def pelvis_coordi(self, vitpose_2d):
-        return vitpose_2d[:, :, self.pelvis_index:self.pelvis_index+1]
     
     def refine_joint(self, vitpose_2d) :
         vitpose_j2d_pelvis = vitpose_2d[:,:,[11,12],:2].mean(dim=2, keepdim=True) 
@@ -28,9 +26,21 @@ class JointTree(nn.Module) :
         joint_2d_feats = joint_2d_feats- vitpose_j2d_pelvis
         return joint_2d_feats
 
-    def forward(self, vitpose_2d) :
+    def pelvis_coord(self, vitpose_2d):
         """
         vitpose_2d : [B, T, J, 2]
+        """
+        vitpose_j2d_pelvis = vitpose_2d[:,:,[11,12],:2].mean(dim=2, keepdim=True) 
+        vitpose_j2d_neck = vitpose_2d[:,:,[5,6],:2].mean(dim=2, keepdim=True)  
+        joint_2d_feats = torch.cat([vitpose_2d[... ,:2], vitpose_j2d_neck], dim=2)   # [B, T, J+1, 2]
+        joint_2d_feats = joint_2d_feats - vitpose_j2d_pelvis
+
+        joint_2d_feats_var = torch.var(joint_2d_feats, dim=-2)      # [B, T, 2]
+
+
+    def forward(self, vitpose_2d) :
+        """
+        vitpose_2d : [B, T, J, 2] J=17
         """
         body_xy = self.refine_joint(vitpose_2d)
         body_rp = self.xy2polar(body_xy)

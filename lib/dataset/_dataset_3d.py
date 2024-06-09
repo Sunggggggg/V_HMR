@@ -197,7 +197,7 @@ class Dataset3D(Dataset):
             w_3d = torch.ones(self.seqlen).float()
 
         bbox = self.get_sequence(start_index, end_index, self.db['bbox'])
-        img_names = path_encoding(self.get_sequence(start_index, end_index, self.db['img_name']))
+        #img_names = path_encoding(self.get_sequence(start_index, end_index, self.db['img_name']))
         input = torch.from_numpy(self.get_sequence(start_index, end_index, self.db['features'])).float()
         inp_vitpose = torch.from_numpy(self.get_sequence(start_index, end_index, self.db['vitpose_joint2d'])).float()
 
@@ -232,7 +232,7 @@ class Dataset3D(Dataset):
         # repeat_num = 1
         target = {
             'features': input,
-            'img_names': img_names,
+            #'img_names': img_names,
             'vitpose_j2d': inp_vitpose,
             'theta': torch.from_numpy(theta_tensor).float(), # camera, pose and shape
             'kp_2d': torch.from_numpy(kp_2d_tensor).float(), # 2D keypoints transformed according to bbox cropping
