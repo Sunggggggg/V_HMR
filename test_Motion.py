@@ -166,7 +166,7 @@ if __name__ == "__main__":
             'bbox': dataset_data['bbox'][indexes][valids],
             'vitpose_j2d': dataset_data['vitpose_joint2d'][indexes][valids].astype('float32')
         }
-        
+
         if 'mpii3d' in data_path:
             data_keyed[u_n]['pose'] = np.zeros((len(valids), 72))
             data_keyed[u_n]['shape'] = np.zeros((len(valids), 10))
@@ -212,7 +212,7 @@ if __name__ == "__main__":
                         input_vitpose.append(curr_vitpose[None, seq_select, :])
                 input_feat = torch.cat(input_feat, dim=0)
                 input_vitpose = torch.cat(input_vitpose, dim=0)
-                preds, mask_ids, pred_mae = model(input_feat, input_vitpose, J_regressor=J_regressor, is_train=False)
+                preds, pred_global = model(input_feat, input_vitpose, J_regressor=J_regressor, is_train=False)
 
                 n_kp = preds[-1]['kp_3d'].shape[-2]
                 pred_j3d = preds[-1]['kp_3d'].view(-1, n_kp, 3).cpu().numpy()
