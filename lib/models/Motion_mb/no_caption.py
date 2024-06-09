@@ -3,7 +3,7 @@ import torch.nn as nn
 
 from .jointspace import JointTree
 from .encoder import STEncoder
-from .motion_encoder import MotionEncoder, ContextEncoder
+from .motion_encoder import MotionEncoder2
 from .regressor import Regressor
 from lib.models.trans_operator import CrossAttention
 
@@ -30,7 +30,9 @@ class Model(nn.Module):
             num_heads=num_heads, drop_rate=drop_rate, drop_path_rate=drop_path_rate, 
             attn_drop_rate=attn_drop_rate)
         
-        self.motion_enc = MotionEncoder(num_frames, embed_dim)
+        self.motion_enc = MotionEncoder2(num_frames, embed_dim)
+        self.motion_norm = nn.LayerNorm(embed_dim)
+        self.joint_head = nn.Linear(num_joints, 1)
 
         self.proj_global = nn.Sequential(
             nn.Linear(embed_dim, 2048),
@@ -45,17 +47,18 @@ class Model(nn.Module):
         B, T = f_img.shape[:2]
         
         # Joint space
-        f_joint = self.joint_space(f_joint[..., :2])    # [B, T, J, 2]
+        f_joint = self.joint_space.pelvis_coord(f_joint[..., :2])    # [B, T, J, 2]
 
         # ST Transformer
-        f_img = self.img_embed(f_img)
-        f_st = self.s_trans(f_img, f_joint)        # [B, T, J, D]
+        f_img = self.img_embed(f_img)               # [B, T, 512]
+        f_st = self.s_trans(f_img, f_joint)         # [B, T, J, D]
 
         # Additional feature
-        f_motion = self.motion_enc(f_img, f_joint) # [B, J, 256]
+        f_motion = self.motion_enc(f_img, f_joint) # [B, 1, J, D]
         
         # Output feature
-        f = torch.sum(f_st * f_motion[:, None], dim=-2)
+        f = self.motion_norm(f_st + f_motion)       # [B, T, J, D]
+        f = self.joint_head(f.permute(0, 1, 3, 2)).view(B, T, -1)
 
         if is_train :
             size = self.num_frames
