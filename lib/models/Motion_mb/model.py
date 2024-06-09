@@ -58,7 +58,7 @@ class Model(nn.Module):
         f_context = self.context_enc(f_text, f_img) # [B, T, 256]
         
         # Output feature
-        f = torch.sum(f_st * f_motion[:, None], dim=-2) # [B, T, 256]
+        f = torch.sum(f_st * f_motion[:, None], dim=-2)
 
         if is_train :
             size = self.num_frames
@@ -79,7 +79,7 @@ class Model(nn.Module):
             s['scores'] = scores
 
         # Local
-        f = f_st[:, self.mid_frame-1:self.mid_frame+2]  # [B, 3, D]
+        f = f[:, self.mid_frame-1:self.mid_frame+2]  # [B, 3, D]
         f = self.proj_short(f)                          # [B, 3, d]
         f = self.short_encoder(f, f_context)            # [B, 3, d]
         if is_train :
