@@ -47,7 +47,7 @@ class Model(nn.Module):
         B, T = f_img.shape[:2]
         
         # Joint space
-        f_joint = self.joint_space.pelvis_coord(f_joint[..., :2])    # [B, T, J, 2]
+        f_joint = self.joint_space.pelvis_coord_rp(f_joint[..., :2])    # [B, T, J, 2]
 
         # ST Transformer
         f_img = self.img_embed(f_img)               # [B, T, 512]
