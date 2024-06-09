@@ -220,12 +220,19 @@ if __name__ == "__main__":
                 pred_rotmat = preds[-1]['rotmat'].view(-1,24,3,3).cpu().numpy()
                 pred_theta = preds[-1]['theta'].view(-1,85).cpu().numpy()
                 # score = score.cpu().numpy()
+                print()
 
                 pred_j3ds.append(pred_j3d)
                 pred_verts.append(pred_vert)
                 pred_rotmats.append(pred_rotmat)
                 pred_thetas.append(pred_theta)
                 # scores.append(score)
+
+            try:
+                pred_j3ds = np.vstack(pred_j3ds)
+                # scores = np.vstack(scores)
+            except:
+                import pdb; pdb.set_trace()
 
             target_j3ds = dataset_data[seq_name]['joints3D']
             pred_verts = np.vstack(pred_verts)
