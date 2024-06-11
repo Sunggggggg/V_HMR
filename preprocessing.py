@@ -14,7 +14,8 @@ from lib.data_utils._img_utils import normalize_2d_kp, transfrom_keypoints, spli
 logger = logging.getLogger(__name__)
 
 class Dataset3D(Dataset):
-    def __init__(self, set, seqlen, overlap=0., folder=None, dataset_name=None, debug=False):
+    def __init__(self, load_opt, set, seqlen, overlap=0., folder=None, dataset_name=None, debug=False):
+        self.load_opt = load_opt
         self.folder = folder
         self.set = set
         self.dataset_name = dataset_name
@@ -86,6 +87,6 @@ class Dataset3D(Dataset):
         return img_names
 
 if __name__ == "__main__" :
-    dataset = Dataset3D(set='train', overlap=0.0)
+    dataset = Dataset3D(load_opt='repr_table4_3dpw_model', set='train', overlap=0.0)
     print(len(dataset))
 
