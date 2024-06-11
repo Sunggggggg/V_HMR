@@ -87,6 +87,6 @@ class Dataset3D(Dataset):
         return img_names
 
 if __name__ == "__main__" :
-    dataset = Dataset3D(load_opt='repr_table4_3dpw_model', set='train', overlap=0.0, dataset_name='3dpw')
+    dataset = Dataset3D(load_opt='repr_table4_3dpw_model', set='train', seqlen=16, overlap=0.0, dataset_name='3dpw')
     print(len(dataset))
 
