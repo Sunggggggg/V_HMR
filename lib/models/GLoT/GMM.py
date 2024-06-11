@@ -3,8 +3,8 @@ import os.path as osp
 import torch.nn as nn
 import os
 from lib.core.config import BASE_DATA_DIR
-from lib.models.spin import Regressor
-from lib.models.transformer_global import Transformer
+from lib.models.GLoT.spin import Regressor
+from lib.models.GLoT.transformer_global import Transformer
 import torch.nn.functional as F
 import importlib
 class GMM(nn.Module):

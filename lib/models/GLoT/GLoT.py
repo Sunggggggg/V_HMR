@@ -8,6 +8,7 @@ from lib.models.GLoT.GMM import GMM
 from lib.models.GLoT.transformer_local import Transformer as local_transformer_encoder
 import torch.nn.functional as F
 from lib.models.trans_operator import CrossAttention, Mlp
+from lib.models.Motion_mb.jointspace import JointTree
 
 class GLoT(nn.Module):
     def __init__(
@@ -46,11 +47,20 @@ class GLoT(nn.Module):
                 drop_path_rate=short_drop_path_r, attn_drop_rate=short_atten_drop, length=self.stride_short * 2 + 1)
         self.regressor = HSCR(drop=drop_reg_short)
         self.initialize_weights()
-       
+
+        self.joint_tree = JointTree()
+
         self.global_modeling = GMM(seqlen, n_layers, d_model, num_head, dropout, drop_path_r, atten_drop, mask_ratio)
         
-    def forward(self, input, vit_pose_j2d, img_path, is_train=False, J_regressor=None):
+    def forward(self, input, vitpose_j2d, is_train=False, J_regressor=None):
         batch_size = input.shape[0]
+        joint_2d_feats = self.joint_tree.pelvis_coord_xy(vitpose_j2d[..., :2])
+
+
+        pose_feat, st_joint_feats = self.pose_enc(joint_2d_feats, input)
+        pose_feat = pose_feat.reshape(batch_size, -1, 2048)     # [B, T, 2048]
+        input = self.pose_norm(input + pose_feat)
+
         smpl_output_global, mask_ids, mem, pred_global = self.global_modeling(input, is_train=is_train, J_regressor=J_regressor)
         
         x_short = input[:, self.mid_frame - self.stride_short:self.mid_frame + self.stride_short + 1]
