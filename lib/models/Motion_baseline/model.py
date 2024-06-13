@@ -82,7 +82,12 @@ class Model(nn.Module) :
         f_enc_short = self.local_encoder(f_short)       # [B, 3, d]
         f_dec_short = self.local_decoder(f_enc_short, f_enc_local)
 
-        smpl_output = self.local_regressor(f_dec_short, pred_global[0], pred_global[1], pred_global[2])
+        if is_train :
+            f_local_output = f_dec_short
+        else :
+            f_local_output = f_dec_short[:, 1:2]
+
+        smpl_output = self.local_regressor(f_local_output, pred_global[0], pred_global[1], pred_global[2])
 
         scores = None
         if not is_train:
