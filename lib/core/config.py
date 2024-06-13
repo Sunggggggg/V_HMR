@@ -20,15 +20,15 @@ from yacs.config import CfgNode as CN
 
 # CONSTANTS
 # You may modify them at will
-GLoT_DB_DIR = '/home/dev4/data/SKY/V_HMR/data/preprocessed_data/FullFrame_vitpose_r5064'
-AMASS_DIR = '/home/dev4/data/SKY/data/amass'
-INSTA_DIR = '/home/dev4/data/SKY/data/V_HMR/insta_variety'
-MPII3D_DIR = '/home/dev4/data/SKY/data/V_HMR/mpi_inf_3dhp'
-THREEDPW_DIR = '/home/dev4/data/SKY/V_HMR/data/3dpw'
-H36M_DIR = '/home/dev4/data/SKY/data/h36m'
-PENNACTION_DIR = '/home/dev4/data/SKY/data/penn_action'
-POSETRACK_DIR = '/home/dev4/data/SKY/data/posetrack'
-BASE_DATA_DIR = '/home/dev4/data/SKY/V_HMR/data/base_data'
+GLoT_DB_DIR = '/mnt/SKY/V_HMR/data/preprocessed_data/FullFrame_vitpose_r5064'
+AMASS_DIR = '/mnt/SKY/data/amass'
+INSTA_DIR = '/mnt/SKY/data/V_HMR/insta_variety'
+MPII3D_DIR = '/mnt/SKY/data/V_HMR/mpi_inf_3dhp'
+THREEDPW_DIR = '/mnt/SKY/V_HMR/data/3dpw'
+H36M_DIR = '/mnt/SKY/data/h36m'
+PENNACTION_DIR = '/mnt/SKY/data/penn_action'
+POSETRACK_DIR = '/mnt/SKY/data/posetrack'
+BASE_DATA_DIR = '/mnt/SKY/V_HMR/data/base_data'
 
 
 # Configuration variables
