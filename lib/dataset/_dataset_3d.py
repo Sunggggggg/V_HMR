@@ -222,9 +222,9 @@ class Dataset3D(Dataset):
         inp_vitpose = torch.from_numpy(self.get_sequence(start_index, end_index, self.db['vitpose_joint2d'])).float()
         
         # Text embedding 
-        img_names = self.get_sequence(start_index, end_index, self.db['img_name'])
+        img_names = self.get_sequence(start_index, end_index, self.db['img_name'])  # ./data/3dpw ...
         mid_index = (end_index - start_index)//2
-        inp_text = self.caption_db[img_names[mid_index]]
+        inp_text = self.caption_db[img_names[mid_index][1:]]
 
         theta_tensor = np.zeros((self.seqlen, 85), dtype=np.float16)
 
@@ -257,7 +257,6 @@ class Dataset3D(Dataset):
         # repeat_num = 1
         target = {
             'features': input,
-            #'img_names': img_names,
             'vitpose_j2d': inp_vitpose,
             'text_emb' : inp_text,
             'theta': torch.from_numpy(theta_tensor).float(), # camera, pose and shape
