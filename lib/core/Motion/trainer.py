@@ -40,7 +40,6 @@ class Trainer():
             cfg,
             data_loaders,
             generator,
-            text_model,
             gen_optimizer,
             criterion,
             lr_scheduler=None,
@@ -67,7 +66,6 @@ class Trainer():
             self.train_3d_iter = iter(self.train_3d_loader)
 
         # Models and optimizers
-        self.text_model = text_model
         self.generator = generator
         self.gen_optimizer = gen_optimizer
 
@@ -147,7 +145,6 @@ class Trainer():
                     target_3d = next(self.train_3d_iter)
 
                 move_dict_to_device(target_3d, self.device)
-
 
             # <======= Feedforward generator and discriminator
             if target_2d and target_3d:
