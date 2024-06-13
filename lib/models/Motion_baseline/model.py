@@ -50,7 +50,7 @@ class Model(nn.Module) :
         
         return joint_2d_feats
 
-    def foward(self, f_text, f_img, f_joint, is_train=False, J_regressor=None) :
+    def forward(self, f_text, f_img, f_joint, is_train=False, J_regressor=None) :
         """
         f_text      : [B, 1, 512]
         f_img       : [B, T, 2048]
