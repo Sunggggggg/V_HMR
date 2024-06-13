@@ -24,17 +24,17 @@ class Model(nn.Module) :
         self.proj_img = nn.Linear(2048, embed_dim)
 
         self.encoder = Transformer(depth=2, embed_dim=embed_dim, mlp_hidden_dim=mlp_ratio*embed_dim,
-            num_heads=num_heads, drop_rate=drop_rate, drop_path_rate=drop_path_rate, 
+            h=num_heads, drop_rate=drop_rate, drop_path_rate=drop_path_rate, 
             attn_drop_rate=attn_drop_rate, length=num_frames)
         
         self.proj_decode = nn.Linear(embed_dim, embed_dim//2)
         self.decoder = Transformer(depth=1, embed_dim=embed_dim//2, mlp_hidden_dim=mlp_ratio*embed_dim,
-            num_heads=num_heads, drop_rate=drop_rate, drop_path_rate=drop_path_rate, 
+            h=num_heads, drop_rate=drop_rate, drop_path_rate=drop_path_rate, 
             attn_drop_rate=attn_drop_rate, length=num_frames)
         
         self.proj_local = nn.Linear(embed_dim, embed_dim//2)
         self.local_encoder = Transformer(depth=3, embed_dim=embed_dim, mlp_hidden_dim=mlp_ratio*embed_dim,
-            num_heads=num_heads, drop_rate=drop_rate, drop_path_rate=drop_path_rate, 
+            h=num_heads, drop_rate=drop_rate, drop_path_rate=drop_path_rate, 
             attn_drop_rate=attn_drop_rate, length=3)
         self.local_decoder = CrossAttention(embed_dim//2)
         
