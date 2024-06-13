@@ -224,7 +224,7 @@ class Dataset3D(Dataset):
         # Text embedding 
         img_names = self.get_sequence(start_index, end_index, self.db['img_name'])  # ./data/3dpw ...
         mid_index = (end_index - start_index)//2
-        inp_text = self.caption_db[img_names[mid_index][1:]]
+        inp_text = self.caption_db[img_names[mid_index][2:]]
 
         theta_tensor = np.zeros((self.seqlen, 85), dtype=np.float16)
 
