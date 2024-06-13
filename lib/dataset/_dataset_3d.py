@@ -51,7 +51,7 @@ class Dataset3D(Dataset):
 
         self.stride = int(seqlen * (1-overlap) + 0.5)
         self.debug = debug
-        self.db = self.load_db()
+        self.db, self.caption_db = self.load_db()
 
         if (set!='train') and (dataset_name=='3dpw') and (target_vid!=''):
             self.select_vid(target_vid)
@@ -128,7 +128,28 @@ class Dataset3D(Dataset):
             raise ValueError(f'{db_file} do not exists')
 
         print(f'Loaded {self.dataset_name} dataset from {db_file}')
-        return db
+
+        ### Video caption -> Text embedding
+        Video_DB_DIR = '/mnt/SKY/V_HMR/data/preprocessed_data/Video_caption/'
+        if self.set == 'train':
+            if self.dataset_name == '3dpw':
+                caption_db_file = osp.join(Video_DB_DIR, f'{self.dataset_name}_{self.set}_caption.pt')
+            elif self.dataset_name == 'mpii3d':
+                caption_db_file = osp.join(Video_DB_DIR, f'{self.dataset_name}_{self.set}_caption.pt')
+            elif self.dataset_name == 'h36m':
+                caption_db_file = osp.join(Video_DB_DIR, f'{self.dataset_name}_{self.set}_caption.pt')
+
+        elif self.set == 'val':
+            caption_db_file = osp.join(Video_DB_DIR, f'{self.dataset_name}_{self.set}_caption.pt')
+        
+        if osp.isfile(caption_db_file):
+            caption_db = joblib.load(caption_db_file)
+        else:
+            raise ValueError(f'{caption_db_file} do not exists')
+
+        print(f'Loaded {self.dataset_name} dataset from {caption_db_file}')
+
+        return db, caption_db
 
     def get_sequence(self, start_index, end_index, data):
         if start_index != end_index:
@@ -197,9 +218,13 @@ class Dataset3D(Dataset):
             w_3d = torch.ones(self.seqlen).float()
 
         bbox = self.get_sequence(start_index, end_index, self.db['bbox'])
-        #img_names = path_encoding(self.get_sequence(start_index, end_index, self.db['img_name']))
         input = torch.from_numpy(self.get_sequence(start_index, end_index, self.db['features'])).float()
         inp_vitpose = torch.from_numpy(self.get_sequence(start_index, end_index, self.db['vitpose_joint2d'])).float()
+        
+        # Text embedding 
+        img_names = self.get_sequence(start_index, end_index, self.db['img_name'])
+        mid_index = (end_index - start_index)//2
+        inp_text = self.caption_db[img_names[mid_index]]
 
         theta_tensor = np.zeros((self.seqlen, 85), dtype=np.float16)
 
@@ -234,6 +259,7 @@ class Dataset3D(Dataset):
             'features': input,
             #'img_names': img_names,
             'vitpose_j2d': inp_vitpose,
+            'text_emb' : inp_text,
             'theta': torch.from_numpy(theta_tensor).float(), # camera, pose and shape
             'kp_2d': torch.from_numpy(kp_2d_tensor).float(), # 2D keypoints transformed according to bbox cropping
             'kp_3d': torch.from_numpy(kp_3d_tensor).float(), # 3D keypoints

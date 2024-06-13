@@ -63,10 +63,10 @@ class Loss(nn.Module):
 
     def forward(
             self,
-            generator_outputs_global,
-            generator_outputs_local,
             data_2d,
             data_3d,
+            generator_outputs_global,
+            generator_outputs_local,
     ):
         reduce = lambda x: x.contiguous().view((x.shape[0] * x.shape[1],) + x.shape[2:])
         flatten = lambda x: x.reshape(-1)

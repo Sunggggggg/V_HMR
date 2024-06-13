@@ -153,25 +153,20 @@ class Trainer():
             if target_2d and target_3d:
                 input_feat = torch.cat((target_2d['features'], target_3d['features']), dim=0).cuda()
                 input_pose = torch.cat((target_2d['vitpose_j2d'], target_3d['vitpose_j2d']), dim=0).cuda()
-                input_path = torch.cat((target_2d['img_names'], target_3d['img_names']), dim=0).cuda()
+                input_text = torch.cat((target_2d['text_emb'], target_3d['text_emb']), dim=0).cuda()
             elif target_3d:
                 input_feat = target_3d['features'].cuda()
                 input_pose = target_3d['vitpose_j2d'].cuda()
-                input_path = target_3d['img_names'].cuda()
+                input_text = target_3d['text_emb'].cuda()
             else:
                 input_feat = target_2d['features'].cuda()
                 input_pose = target_2d['vitpose_j2d'].cuda()
-                input_path = target_2d['img_names'].cuda()
+                input_text = target_2d['text_emb'].cuda()
 
             timer['data'] = time.time() - start
             start = time.time()
 
-            if False :
-                f_text = self.text_model.textemb(input_path)
-                smpl_output, smpl_output_global = self.generator(f_text, input_feat, input_pose, is_train=True)
-            else : 
-                f_text = None
-                smpl_output, smpl_output_global = self.generator(input_feat, input_pose, is_train=True)
+            smpl_output, smpl_output_global = self.generator(input_text, input_feat, input_pose, is_train=True)
             
             timer['forward'] = time.time() - start
             start = time.time()
@@ -262,14 +257,10 @@ class Trainer():
                 # <=============
                 input_feat = target['features'].cuda()
                 input_pose = target['vitpose_j2d'].cuda()
-                input_path = target['img_names'].cuda()
-                if False :
-                    f_text = self.text_model.textemb(input_path)
-                    smpl_output, smpl_output_global = self.generator(f_text, input_feat, input_pose, is_train=False, J_regressor=J_regressor)
-                else : 
-                    f_text = None
-                    smpl_output, smpl_output_global = self.generator(input_feat, input_pose, is_train=False, J_regressor=J_regressor)
-                
+                input_text = target['text_emb'].cuda()
+
+                smpl_output, smpl_output_global = self.generator(input_text, input_feat, input_pose, is_train=False, J_regressor=J_regressor)
+            
                 # convert to 14 keypoint format for evaluation
                 n_kp = smpl_output[-1]['kp_3d'].shape[-2]
                 pred_j3d = smpl_output[-1]['kp_3d'].view(-1, n_kp, 3).cpu().numpy()
