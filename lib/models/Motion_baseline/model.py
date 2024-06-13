@@ -33,6 +33,7 @@ class Model(nn.Module) :
             attn_drop_rate=attn_drop_rate, length=num_frames)
         
         self.proj_local = nn.Linear(embed_dim, embed_dim//2)
+        self.proj_enc_local = nn.Linear(embed_dim, embed_dim//2)
         self.local_encoder = Transformer(depth=3, embed_dim=embed_dim//2, mlp_hidden_dim=embed_dim,
             h=num_heads, drop_rate=drop_rate, drop_path_rate=drop_path_rate, 
             attn_drop_rate=attn_drop_rate, length=3)
@@ -77,8 +78,9 @@ class Model(nn.Module) :
         
         f_short = f[:, self.mid_frame-1:self.mid_frame+2]
         f_short = self.proj_local(f_short)              # [B, 3, d]
+        f_enc_local = self.proj_enc_local(f_enc)
         f_enc_short = self.local_encoder(f_short)       # [B, 3, d]
-        f_dec_short = self.local_decoder(f_enc_short, f_enc)
+        f_dec_short = self.local_decoder(f_enc_short, f_enc_local)
 
         smpl_output = self.local_regressor(f_dec_short, pred_global[0], pred_global[1], pred_global[2])
 
