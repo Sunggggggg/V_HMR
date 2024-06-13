@@ -87,7 +87,7 @@ class Model(nn.Module) :
         else :
             f_local_output = f_dec_short[:, 1:2]
 
-        smpl_output = self.local_regressor(f_local_output, pred_global[0], pred_global[1], pred_global[2])
+        smpl_output = self.local_regressor(f_local_output, pred_global[0], pred_global[1], pred_global[2], is_train=is_train, J_regressor=J_regressor)
 
         scores = None
         if not is_train:
