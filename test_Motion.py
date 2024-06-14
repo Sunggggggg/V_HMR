@@ -117,7 +117,6 @@ if __name__ == "__main__":
     dtype = torch.float
     J_regressor = torch.from_numpy(np.load(osp.join(BASE_DATA_DIR, 'J_regressor_h36m.npy'))).float()
 
-
     """ Data """
     seqlen = 16
     stride = 1  # seqlen
@@ -125,8 +124,8 @@ if __name__ == "__main__":
     Path(out_dir).mkdir(parents=True, exist_ok=True)
 
     if target_dataset == '3dpw':
-        #data_path = f'/mnt/SKY/data/preprocessed_data/FullFrame_vitpose_r5064/{target_dataset}_{set}_db_clip.pt'  #
         data_path = f'/home/dev4/data/SKY/V_HMR/data/preprocessed_data/FullFrame_vitpose_r5064/{target_dataset}_{set}_db_clip.pt'
+        caption_path = f'/mnt/SKY/V_HMR/data/preprocessed_data/Video_caption/{target_dataset}_test_caption.pt'
     elif target_dataset == 'h36m':
         if cfg.TITLE == 'repr_table4_h36m_mpii3d_model':
             data_path = f'/mnt/SKY/preprocessed_data/{target_dataset}_{set}_25fps_db_clip.pt'  # Table 4
@@ -141,6 +140,10 @@ if __name__ == "__main__":
 
     print(f"Load data from {data_path}")
     dataset_data = joblib.load(data_path)
+
+    print(f"Load caption from {caption_path}")
+    caption_data = joblib.load(caption_path)
+
     full_res = defaultdict(list)
 
     vid_name_list = dataset_data['vid_name']
@@ -156,8 +159,7 @@ if __name__ == "__main__":
             valids = dataset_data['valid'][indexes].astype(bool)
         else:
             valids = np.ones(dataset_data['features'][indexes].shape[0]).astype(bool)
-        # import pdb; pdb.set_trace()
-        # valids[:] = 1
+
         data_keyed[u_n] = {
             'features': dataset_data['features'][indexes][valids],
             'joints3D': dataset_data['joints3D'][indexes][valids],
@@ -166,6 +168,7 @@ if __name__ == "__main__":
             'bbox': dataset_data['bbox'][indexes][valids],
             'vitpose_j2d': dataset_data['vitpose_joint2d'][indexes][valids].astype('float32')
         }
+
 
         if 'mpii3d' in data_path:
             data_keyed[u_n]['pose'] = np.zeros((len(valids), 72))
@@ -183,8 +186,10 @@ if __name__ == "__main__":
         tot_num_pose = 0
         pbar = tqdm(dataset_data.keys())
         for seq_name in pbar:
-            curr_feats = dataset_data[seq_name]['features']
+            curr_feats = dataset_data[seq_name]['features']         # 
             curr_vitposes = dataset_data[seq_name]['vitpose_j2d']
+            curr_text_feats = dataset_data[seq_name]['text_emb']
+
             res_save = {}
             curr_feat = torch.tensor(curr_feats).to(device)
             curr_vitpose = torch.tensor(curr_vitposes).to(device)
