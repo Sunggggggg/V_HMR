@@ -23,7 +23,6 @@ class Model(nn.Module):
         self.num_frames = num_frames
         self.mid_frame = num_frames // 2
         self.stride_short = 4
-        self.joint_space = JointTree()
 
         self.t_trans = TEncoder(embed_dim=embed_dim)
         self.s_trans = STEncoder(depth=depth, embed_dim=embed_dim, mlp_ratio=mlp_ratio,
@@ -47,7 +46,7 @@ class Model(nn.Module):
         B, T = f_img.shape[:2]
         
         # Joint space
-        f_joint = self.joint_space(f_joint[..., :2])    # [B, T, J, 2]
+        f_joint = f_joint[..., :2]                  # [B, T, J, 2]
 
         # ST Transformer
         f_temp = self.t_trans(f_text, f_img)        # [B, T, D]
