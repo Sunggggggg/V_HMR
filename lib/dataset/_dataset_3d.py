@@ -234,8 +234,7 @@ class Dataset3D(Dataset):
         
         # Text embedding 
         img_names = self.get_sequence(start_index, end_index, self.db['img_name'])  # ./data/3dpw ...
-        mid_index = (end_index - start_index)//2 + 1
-        inp_text = torch.from_numpy(self.load_text_emb(img_names[mid_index])).float()
+        inp_text = torch.from_numpy(self.load_text_emb(img_names[8])).float()
 
         theta_tensor = np.zeros((self.seqlen, 85), dtype=np.float16)
 
