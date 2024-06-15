@@ -98,7 +98,8 @@ class Dataset3D(Dataset):
         elif self.dataset_name == 'mpii3d':
             seqname, img = os.path.join(*img_name.split('/')[2:5]), img_name.split('/')[-1]
         elif self.dataset_name == 'h36m':
-            seqname, img = img_name.split('/')[-2:]
+            img_name_len = len('000000.jpg')
+            seqname, img = img_name.split('/')[-2], img_name.split('/')[-2][-img_name_len:]
         
         inp_text = self.caption_db[seqname][img]['text_feat']
         return inp_text
