@@ -16,7 +16,6 @@ from lib.models.smpl import SMPL_MODEL_DIR, SMPL, H36M_TO_J14
 from lib.utils.demo_utils import convert_crop_cam_to_orig_img, images_to_video
 from lib.utils.eval_utils import compute_accel, compute_error_accel, batch_compute_similarity_transform_torch, compute_error_verts, compute_errors, plot_accel
 from lib.utils.slerp_filter_utils import quaternion_from_matrix, quaternion_slerp, quaternion_matrix
-from lib.models.Motion_mb.no_caption import Model
 
 def get_sequence(start_index, end_index, seqlen=16):
     if end_index - start_index + 1 == seqlen:
@@ -124,8 +123,8 @@ if __name__ == "__main__":
     Path(out_dir).mkdir(parents=True, exist_ok=True)
 
     if target_dataset == '3dpw':
-        data_path = f'/home/dev4/data/SKY/V_HMR/data/preprocessed_data/FullFrame_vitpose_r5064/{target_dataset}_{set}_db_clip.pt'
-        caption_path = f'/mnt/SKY/V_HMR/data/preprocessed_data/Video_caption/{target_dataset}_test_caption.pt'
+        data_path = f'/mnt/SKY/V_HMR/data/preprocessed_data/FullFrame_vitpose_r5064/{target_dataset}_{set}_db_clip.pt'
+        caption_path = f'/mnt/SKY/V_HMR/data/preprocessed_data/Video_caption/{target_dataset}_train_caption.pt'
     elif target_dataset == 'h36m':
         if cfg.TITLE == 'repr_table4_h36m_mpii3d_model':
             data_path = f'/mnt/SKY/preprocessed_data/{target_dataset}_{set}_25fps_db_clip.pt'  # Table 4
