@@ -7,6 +7,7 @@ from lib.models.GLoT.spin import Regressor
 from lib.models.GLoT.transformer_global import Transformer
 import torch.nn.functional as F
 import importlib
+
 class GMM(nn.Module):
     def __init__(
             self,
@@ -23,7 +24,7 @@ class GMM(nn.Module):
 
         super(GMM, self).__init__()
             
-        self.proj = nn.Linear(2048, d_model)
+        self.proj = nn.Linear(512, d_model)
         self.trans = Transformer(depth=n_layers, embed_dim=d_model, \
                 mlp_hidden_dim=d_model*4, h=num_head, drop_rate=dropout, \
                 drop_path_rate=drop_path_r, attn_drop_rate=atten_drop, length=seqlen)
@@ -41,7 +42,7 @@ class GMM(nn.Module):
     def forward(self, input, is_train=False, J_regressor=None):
         batch_size, seqlen = input.shape[:2]
 
-        input = self.proj(input)
+        #input = self.proj(input)
         if is_train:
             mem, mask_ids, ids_restore = self.trans.forward_encoder(input, mask_flag=True, mask_ratio=self.mask_ratio)
         else:

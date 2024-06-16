@@ -23,25 +23,6 @@ class MotionEncoder(nn.Module):
         #f_motion = f_motion.softmax(dim=1)                  # [B, J, d]
         return f_motion
 
-class MotionEncoder2(nn.Module):
-    def __init__(self, seqlen, emb_dim=256) :
-        super().__init__()
-        self.joint_embed = nn.Linear(2*seqlen, emb_dim)
-        self.motion_encoder = CrossAttention(dim=emb_dim)
-    
-    def forward(self, f_img, f_joint) :
-        """
-        f_joint : [B, T, J, 2]
-        f_text  : [B, 1, 512]
-        """
-        B, T, J, _ = f_joint.shape
-        f_joint = f_joint.permute(0, 2, 1, 3).flatten(-2)   # [B, J, 2T]
-        f_joint = self.joint_embed(f_joint)                 # [B, J, d]
-        
-        f_motion = self.motion_encoder(f_joint, f_img)      # [B, J, d]
-        f_motion = f_motion.view(B, 1, J, -1)               # [B, 1, J, d]
-        return f_motion
-
 class ContextEncoder(nn.Module):
     def __init__(self, emb_dim=256, img_emb_dim=2048, text_emb_dim=512) :
         super().__init__()

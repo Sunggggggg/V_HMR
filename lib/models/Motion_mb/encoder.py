@@ -98,7 +98,7 @@ class TEncoder(nn.Module):
 class STEncoder(nn.Module):
     def __init__(self, 
                  num_frames=16,
-                 num_joints=19,
+                 num_joints=20,
                  embed_dim=512, 
                  depth=3, 
                  num_heads=8, 
@@ -111,7 +111,7 @@ class STEncoder(nn.Module):
         self.depth = depth
 
         self.joint_embed = nn.Linear(2, embed_dim)
-        self.img_embed = nn.Linear(embed_dim, embed_dim)
+        self.img_embed = nn.Linear(2048, embed_dim)
 
         self.temp_embed = nn.Linear(embed_dim, embed_dim)
         self.s_norm = nn.LayerNorm(embed_dim)

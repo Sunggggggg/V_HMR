@@ -210,7 +210,7 @@ class Regressor(nn.Module):
     def __init__(self, smpl_mean_params=SMPL_MEAN_PARAMS):
         super(Regressor, self).__init__()
 
-        npose = 24 * 6
+        npose = 24 * 6  # 144
 
         self.fc1 = nn.Linear(512 * 4 + npose + 13, 1024)
         self.drop1 = nn.Dropout()
@@ -303,7 +303,7 @@ class Regressor(nn.Module):
         pose = rotation_matrix_to_angle_axis(pred_rotmat.reshape(-1, 3, 3)).reshape(-1, 72)
 
         output = [{
-            'theta'  : torch.cat([pred_cam, pose, pred_shape], dim=1),
+            'theta'  : torch.cat([pred_cam, pose, pred_shape], dim=1),  # [BT, 3+72+10]
             'verts'  : pred_vertices,
             'kp_2d'  : pred_keypoints_2d,
             'kp_3d'  : pred_joints,

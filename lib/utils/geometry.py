@@ -334,14 +334,14 @@ def rot6d_to_rotmat(x):
     x = x.view(-1,3,2)      # [B*T*24, 3, 2]
 
     # Normalize the first vector
-    b1 = F.normalize(x[:, :, 0], dim=1, eps=1e-6)
+    b1 = F.normalize(x[:, :, 0], dim=1, eps=1e-6)                       # [B*T*24, 3]
 
-    dot_prod = torch.sum(b1 * x[:, :, 1], dim=1, keepdim=True)
+    dot_prod = torch.sum(b1 * x[:, :, 1], dim=1, keepdim=True)          # [B*T*24, 1]
     # Compute the second vector by finding the orthogonal complement to it
-    b2 = F.normalize(x[:, :, 1] - dot_prod * b1, dim=-1, eps=1e-6)
+    b2 = F.normalize(x[:, :, 1] - dot_prod * b1, dim=-1, eps=1e-6)      # [B*T*24, 3]
 
     # Finish building the basis by taking the cross product
     b3 = torch.cross(b1, b2, dim=1)
-    rot_mats = torch.stack([b1, b2, b3], dim=-1)
+    rot_mats = torch.stack([b1, b2, b3], dim=-1)                        # [BT24, 3, 3]
 
     return rot_mats

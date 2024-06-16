@@ -162,3 +162,69 @@ def perspective_projection(points, rotation, translation,
     projected_points = torch.einsum('bij,bkj->bki', K, projected_points)
 
     return projected_points[:, :, :-1]
+
+
+class LocalRegressor(nn.Module):
+    def __init__(self, smpl_mean_params=SMPL_MEAN_PARAMS, hidden_dim=1024, drop=0.5):
+        super(LocalRegressor, self).__init__()
+        self.fc1 = nn.Linear(256 + 6, hidden_dim)
+        self.drop1 = nn.Dropout(drop)
+        self.decpose = nn.Linear(1024, 6)
+
+        self.smpl = SMPL(
+            SMPL_MODEL_DIR,
+            batch_size=64,
+            create_transl=False,
+        )
+
+    def forward(self, x, init_pose, init_shape, init_cam, is_train=False, J_regressor=None):
+        """
+        x  : [B, T, J, D]
+        init_pose, init_shape, init_cam : [B, T, /]
+        """
+        B, T = x.shape[:2]
+        pred_pose = init_pose.detach()
+        pred_shape = init_shape.detach()
+        pred_cam = init_cam.detach()
+        
+        # Pose
+        pred_pose = pred_pose.view(B, T, 24, 6)
+        
+        for _ in range(3):
+            xc = torch.cat([x, pred_pose], dim=-1)  # [B, 3, J, D+6]
+            xc = self.fc1(xc)                       # [B, 3, J, 1024]
+            xc = self.drop1(xc)
+            pred_pose = self.decpose(xc) + pred_pose    # [B, 3, J, 6]
+
+        out_put = self.get_output(pred_pose, pred_shape, pred_cam, B, is_train, J_regressor)
+        return out_put
+
+    def get_output(self, pred_pose, pred_shape, pred_cam, batch_size, is_train, J_regressor):
+        pred_rotmat = rot6d_to_rotmat(pred_pose).view(batch_size, 24, 3, 3)
+        pred_output = self.smpl(
+            betas=pred_shape,
+            body_pose=pred_rotmat[:, 1:],
+            global_orient=pred_rotmat[:, 0].unsqueeze(1),
+            pose2rot=False,
+        )
+
+        pred_vertices = pred_output.vertices
+        pred_joints = pred_output.joints
+
+        if not is_train and J_regressor is not None:
+            J_regressor_batch = J_regressor[None, :].expand(pred_vertices.shape[0], -1, -1).to(pred_vertices.device)
+            pred_joints = torch.matmul(J_regressor_batch, pred_vertices)
+            pred_joints = pred_joints[:, H36M_TO_J14, :]
+
+        pred_keypoints_2d = projection(pred_joints, pred_cam)
+
+        pose = rotation_matrix_to_angle_axis(pred_rotmat.reshape(-1, 3, 3)).reshape(-1, 72)
+
+        output = [{
+            'theta'  : torch.cat([pred_cam, pose, pred_shape], dim=1),
+            'verts'  : pred_vertices,
+            'kp_2d'  : pred_keypoints_2d,
+            'kp_3d'  : pred_joints,
+            'rotmat' : pred_rotmat
+        }]
+        return output
