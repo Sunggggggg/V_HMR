@@ -196,6 +196,7 @@ class LocalRegressor(nn.Module):
             xc = self.drop1(xc)
             pred_pose = self.decpose(xc) + pred_pose    # [B, 3, J, 6]
 
+        pred_pose = pred_pose.flatten(-2)
         out_put = self.get_output(pred_pose, pred_shape, pred_cam, B, is_train, J_regressor)
         return out_put
 
