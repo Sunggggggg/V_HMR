@@ -102,11 +102,11 @@ class Model(nn.Module) :
         else:
             size = 3
             for s in smpl_output:
-                s['theta'] = s['theta'].reshape(B, size, -1)
-                s['verts'] = s['verts'].reshape(B, size, -1, 3)
-                s['kp_2d'] = s['kp_2d'].reshape(B, size, -1, 2)
-                s['kp_3d'] = s['kp_3d'].reshape(B, size, -1, 3)
-                s['rotmat'] = s['rotmat'].reshape(B, size, -1, 3, 3)
+                s['theta'] = s['theta'].reshape(B, size, -1)            # [B, T, 3+10+24*3]
+                s['verts'] = s['verts'].reshape(B, size, -1, 3)         # [B, T, 6890, 3]
+                s['kp_2d'] = s['kp_2d'].reshape(B, size, -1, 2)         # [B, T, 24, 2]
+                s['kp_3d'] = s['kp_3d'].reshape(B, size, -1, 3)         # [B, T, 24, 3]
+                s['rotmat'] = s['rotmat'].reshape(B, size, -1, 3, 3)    # [B, T, 24, 3, 3]
                 s['scores'] = scores
 
         return smpl_output, smpl_output_global
