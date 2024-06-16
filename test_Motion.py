@@ -188,7 +188,7 @@ if __name__ == "__main__":
         for seq_name in pbar:
             curr_feats = dataset_data[seq_name]['features']         # 
             curr_vitposes = dataset_data[seq_name]['vitpose_j2d']
-            curr_text_feats = dataset_data[seq_name]['text_emb']
+            curr_text_feats = caption_data[seq_name[:-2]]
 
             res_save = {}
             curr_feat = torch.tensor(curr_feats).to(device)
@@ -205,19 +205,32 @@ if __name__ == "__main__":
             for curr_idx in range(0, len(chunk_idxes), 8):
                 input_feat = []
                 input_vitpose = []
+                input_text = []
                 if (curr_idx + 8) < len(chunk_idxes):
                     for ii in range(8):
                         seq_select = get_sequence(chunk_idxes[curr_idx+ii][0], chunk_idxes[curr_idx+ii][1])
-                        input_feat.append(curr_feat[None, seq_select, :])
-                        input_vitpose.append(curr_vitpose[None, seq_select, :])
+                        mid_seq_select = seq_select[8]
+
+                        img_name = 'image_{0:05d}.jpg'.format(mid_seq_select)
+                        curr_text = curr_text_feats[img_name]['text_feat']  
+                        input_feat.append(curr_feat[None, seq_select, :])       # [1, 16, 2048]
+                        input_vitpose.append(curr_vitpose[None, seq_select, :]) # [1, 16, 17, 2]
+                        input_text.append(curr_text[None, ...])                 # [1, 1, 512]
                 else:
                     for ii in range(curr_idx, len(chunk_idxes)):
                         seq_select = get_sequence(chunk_idxes[ii][0], chunk_idxes[ii][1])
+                        mid_seq_select = seq_select[8]
+
+                        img_name = 'image_{0:05d}.jpg'.format(mid_seq_select)
+                        curr_text = curr_text_feats[img_name]['text_feat']
                         input_feat.append(curr_feat[None, seq_select, :])
                         input_vitpose.append(curr_vitpose[None, seq_select, :])
+                        input_text.append(curr_text[None, ...])
+
                 input_feat = torch.cat(input_feat, dim=0)
                 input_vitpose = torch.cat(input_vitpose, dim=0)
-                preds, pred_global = model(input_feat, input_vitpose, J_regressor=J_regressor, is_train=False)
+                input_text = torch.cat(input_text, dim=0)
+                preds, pred_global = model(input_text, input_feat, input_vitpose, J_regressor=J_regressor, is_train=False)
 
                 n_kp = preds[-1]['kp_3d'].shape[-2]
                 pred_j3d = preds[-1]['kp_3d'].view(-1, n_kp, 3).cpu().numpy()
