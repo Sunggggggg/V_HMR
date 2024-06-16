@@ -297,13 +297,23 @@ class Trainer():
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
 
+            if (epoch + 1)%10 == 0 :
+                print("Checkpoint..!!")
+                save_dict = {
+                    'epoch': self.epoch,
+                    'gen_state_dict': self.generator.state_dict(),
+                    'gen_optimizer': self.gen_optimizer.state_dict(),
+                }
+                filename = osp.join(self.logdir, f'Epoch_{epoch + 1}_checkpoint.pth.tar')
+                torch.save(save_dict, filename)
+            
             print("Checkpoint..!!")
             save_dict = {
                 'epoch': self.epoch,
                 'gen_state_dict': self.generator.state_dict(),
                 'gen_optimizer': self.gen_optimizer.state_dict(),
             }
-            filename = osp.join(self.logdir, f'current_checkpoint.pth.tar')
+            filename = osp.join(self.logdir, 'current_checkpoint.pth.tar')
             torch.save(save_dict, filename)
 
 
