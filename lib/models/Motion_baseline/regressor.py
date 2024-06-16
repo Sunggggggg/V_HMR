@@ -68,7 +68,7 @@ class Global_regressor(nn.Module):
             xc = torch.cat([x, pred_pose, pred_shape, pred_cam], 1)
             xc = self.fc1(xc)
             xc = self.drop1(xc)
-            pred_pose = self.decpose(xc) + pred_pose
+            pred_pose = self.decpose(xc) + pred_pose        # [B, T, 144]
             pred_shape = self.decshape(xc) + pred_shape
             pred_cam = self.deccam(xc) + pred_cam
 
@@ -103,8 +103,8 @@ class Global_regressor(nn.Module):
         pose = rotation_matrix_to_angle_axis(pred_rotmat.reshape(-1, 3, 3)).reshape(-1, 72)
 
         output = [{
-            'theta'  : torch.cat([pred_cam, pose, pred_shape], dim=1),
-            'verts'  : pred_vertices,
+            'theta'  : torch.cat([pred_cam, pose, pred_shape], dim=1),  # [3+10+24*3]
+            'verts'  : pred_vertices,                                   # [6890]
             'kp_2d'  : pred_keypoints_2d,
             'kp_3d'  : pred_joints,
             'rotmat' : pred_rotmat

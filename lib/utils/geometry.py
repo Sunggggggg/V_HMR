@@ -328,7 +328,10 @@ def rot6d_to_rotmat_spin(x):
 
 
 def rot6d_to_rotmat(x):
-    x = x.view(-1,3,2)
+    """
+    x : [B, T, 144]
+    """
+    x = x.view(-1,3,2)      # [B*T*24, 3, 2]
 
     # Normalize the first vector
     b1 = F.normalize(x[:, :, 0], dim=1, eps=1e-6)
