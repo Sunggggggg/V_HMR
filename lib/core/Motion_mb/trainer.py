@@ -40,7 +40,6 @@ class Trainer():
             cfg,
             data_loaders,
             generator,
-            text_model,
             gen_optimizer,
             criterion,
             lr_scheduler=None,
@@ -67,7 +66,6 @@ class Trainer():
             self.train_3d_iter = iter(self.train_3d_loader)
 
         # Models and optimizers
-        self.text_model = text_model
         self.generator = generator
         self.gen_optimizer = gen_optimizer
 
@@ -152,17 +150,20 @@ class Trainer():
             if target_2d and target_3d:
                 input_feat = torch.cat((target_2d['features'], target_3d['features']), dim=0).cuda()
                 input_pose = torch.cat((target_2d['vitpose_j2d'], target_3d['vitpose_j2d']), dim=0).cuda()
+                input_text = torch.cat((target_2d['text_emb'], target_3d['text_emb']), dim=0).cuda()
             elif target_3d:
                 input_feat = target_3d['features'].cuda()
                 input_pose = target_3d['vitpose_j2d'].cuda()
+                input_text = target_3d['text_emb'].cuda()
             else:
                 input_feat = target_2d['features'].cuda()
                 input_pose = target_2d['vitpose_j2d'].cuda()
+                input_text = target_2d['text_emb'].cuda()
 
             timer['data'] = time.time() - start
             start = time.time()
 
-            smpl_output, mask_ids, smpl_output_global = self.generator(input_feat, input_pose, is_train=True)
+            smpl_output, mask_ids, smpl_output_global = self.generator(input_text, input_feat, input_pose, is_train=True)
             
             timer['forward'] = time.time() - start
             start = time.time()
@@ -171,7 +172,9 @@ class Trainer():
                 generator_outputs_global=smpl_output_global,
                 generator_outputs_local=smpl_output,
                 data_2d=target_2d,
-                data_3d=target_3d
+                data_3d=target_3d,
+                scores=None, 
+                mask_ids=mask_ids
             )
 
             timer['loss'] = time.time() - start
@@ -219,16 +222,6 @@ class Trainer():
                 exit('Nan value in loss, exiting!...')
             # =======>
 
-            save_dict = {
-                'epoch': self.epoch,
-                'gen_state_dict': self.generator.state_dict(),
-                'gen_optimizer': self.gen_optimizer.state_dict(),
-            }
-
-            print("Checkpoint..!!")
-            filename = osp.join(self.logdir, f'current_checkpoint.pth.tar')
-            torch.save(save_dict, filename)
-
         bar.finish()
 
         logger.info(summary_string)
@@ -253,8 +246,10 @@ class Trainer():
                 # <=============
                 input_feat = target['features'].cuda()
                 input_pose = target['vitpose_j2d'].cuda()
-                smpl_output, smpl_output_global = self.generator(input_feat, input_pose, is_train=False, J_regressor=J_regressor)
-                
+                input_text = target['text_emb'].cuda()
+
+                smpl_output, _, smpl_output_global = self.generator(input_text, input_feat, input_pose, is_train=False, J_regressor=J_regressor)
+            
                 # convert to 14 keypoint format for evaluation
                 n_kp = smpl_output[-1]['kp_3d'].shape[-2]
                 pred_j3d = smpl_output[-1]['kp_3d'].view(-1, n_kp, 3).cpu().numpy()
@@ -301,6 +296,15 @@ class Trainer():
             # lr decay
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
+
+            print("Checkpoint..!!")
+            save_dict = {
+                'epoch': self.epoch,
+                'gen_state_dict': self.generator.state_dict(),
+                'gen_optimizer': self.gen_optimizer.state_dict(),
+            }
+            filename = osp.join(self.logdir, f'current_checkpoint.pth.tar')
+            torch.save(save_dict, filename)
 
 
     def save_model(self, performance, epoch):
