@@ -67,8 +67,8 @@ class GLoTLoss(nn.Module):
 
     def forward(
             self,
-            generator_outputs_mae,
-            generator_outputs_short,
+            generator_outputs_global,
+            generator_outputs_local,
             data_2d,
             data_3d,
             scores,
@@ -93,8 +93,8 @@ class GLoTLoss(nn.Module):
         w_smpl = data_3d['w_smpl'].type(torch.bool)
 
         # 
-        loss_kp_2d_mae, loss_kp_3d_mae, loss_accel_2d_mae, loss_accel_3d_mae, loss_pose_mae, loss_shape_mae  = self.cal_loss(sample_2d_count, \
-            real_2d, real_3d, real_3d_theta, w_3d, w_smpl, reduce, flatten, generator_outputs_mae, mask_ids)
+        loss_kp_2d_global, loss_kp_3d_global, loss_accel_2d_global, loss_accel_3d_global, loss_pose_global, loss_shape_global  = self.cal_loss(sample_2d_count, \
+            real_2d, real_3d, real_3d_theta, w_3d, w_smpl, reduce, flatten, generator_outputs_global, mask_ids)
 
         # 
         real_2d = real_2d[:, seq_len // 2 - 1: seq_len // 2 + 2]
@@ -102,25 +102,25 @@ class GLoTLoss(nn.Module):
         real_3d_theta = data_3d['theta'][:, seq_len // 2 - 1: seq_len // 2 + 2]
         w_3d = data_3d['w_3d'].type(torch.bool)[:, seq_len // 2 - 1: seq_len // 2 + 2]
         w_smpl = data_3d['w_smpl'].type(torch.bool)[:, seq_len // 2 - 1: seq_len // 2 + 2]
-        loss_kp_2d_short, loss_kp_3d_short, loss_accel_2d_short, loss_accel_3d_short, loss_pose_short, loss_shape_short = self.cal_loss(sample_2d_count, \
-            real_2d, real_3d, real_3d_theta, w_3d, w_smpl, reduce, flatten, generator_outputs_short)
+        loss_kp_2d_local, loss_kp_3d_local, loss_accel_2d_local, loss_accel_3d_local, loss_pose_local, loss_shape_local = self.cal_loss(sample_2d_count, \
+            real_2d, real_3d, real_3d_theta, w_3d, w_smpl, reduce, flatten, generator_outputs_local)
 
         loss_dict = {
-            'loss_kp_2d_mae': loss_kp_2d_mae,
-            'loss_kp_3d_mae': loss_kp_3d_mae,
-            'loss_kp_2d_short': loss_kp_2d_short,
-            'loss_kp_3d_short': loss_kp_3d_short,
-            'loss_accel_2d_mae': loss_accel_2d_mae, 
-            'loss_accel_3d_mae': loss_accel_3d_mae,
-            'loss_accel_2d_short': loss_accel_2d_short,
-            'loss_accel_3d_short': loss_accel_3d_short
+            'loss_kp_2d_global': loss_kp_2d_global,
+            'loss_kp_3d_global': loss_kp_3d_global,
+            'loss_kp_2d_local': loss_kp_2d_local,
+            'loss_kp_3d_local': loss_kp_3d_local,
+            'loss_accel_2d_global': loss_accel_2d_global, 
+            'loss_accel_3d_global': loss_accel_3d_global,
+            'loss_accel_2d_local': loss_accel_2d_local,
+            'loss_accel_3d_local': loss_accel_3d_local
         }
 
-        if loss_pose_mae is not None:
-            loss_dict['loss_pose_mae'] = loss_pose_mae
-            loss_dict['loss_pose_short'] = loss_pose_short
-            loss_dict['loss_shape_mae'] = loss_shape_mae
-            loss_dict['loss_shape_short'] = loss_shape_short
+        if loss_pose_global is not None:
+            loss_dict['loss_pose_global'] = loss_pose_global
+            loss_dict['loss_pose_local'] = loss_pose_local
+            loss_dict['loss_shape_global'] = loss_shape_global
+            loss_dict['loss_shape_local'] = loss_shape_local
             
         gen_loss = torch.stack(list(loss_dict.values())).sum()
 
