@@ -45,22 +45,6 @@ class Model(nn.Module):
             attn_drop_rate=attn_drop_rate)
         
         self.localregressor = LocalRegressor()
-
-        # self.t_trans = TEncoder(embed_dim=embed_dim)
-        
-        
-        # self.motion_enc = MotionEncoder(num_frames, embed_dim)
-        # self.context_enc = ContextEncoder(embed_dim//2)
-
-        # self.proj_global = nn.Sequential(
-        #     nn.Linear(embed_dim, 2048),
-        #     nn.LayerNorm(2048)
-        # )
-        # self.global_regressor = Regressor(2048)
-        
-        # self.proj_short = nn.Linear(embed_dim, embed_dim//2)
-        # self.short_encoder = CrossAttention(embed_dim//2)
-        # self.local_regressor = Regressor(embed_dim//2)
     
     def forward(self, f_text, f_img, vitpose_2d, is_train=False, J_regressor=None):
         B, T = f_img.shape[:2]
