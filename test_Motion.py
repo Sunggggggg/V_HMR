@@ -214,7 +214,7 @@ if __name__ == "__main__":
                         mid_seq_select = seq_select[8]
 
                         img_name = 'image_{0:05d}.jpg'.format(mid_seq_select)
-                        curr_text = curr_text_feats[img_name]['text_feat']  
+                        curr_text = torch.tensor(curr_text_feats[img_name]['text_feat']).to(device)  
                         input_feat.append(curr_feat[None, seq_select, :])       # [1, 16, 2048]
                         input_vitpose.append(curr_vitpose[None, seq_select, :]) # [1, 16, 17, 2]
                         input_text.append(curr_text[None, ...])                 # [1, 1, 512]
@@ -224,7 +224,7 @@ if __name__ == "__main__":
                         mid_seq_select = seq_select[8]
 
                         img_name = 'image_{0:05d}.jpg'.format(mid_seq_select)
-                        curr_text = curr_text_feats[img_name]['text_feat']
+                        curr_text = torch.tensor(curr_text_feats[img_name]['text_feat']).to(device)
                         input_feat.append(curr_feat[None, seq_select, :])
                         input_vitpose.append(curr_vitpose[None, seq_select, :])
                         input_text.append(curr_text[None, ...])
@@ -239,7 +239,6 @@ if __name__ == "__main__":
                 pred_vert = preds[-1]['verts'].view(-1, 6890, 3).cpu().numpy()
                 pred_rotmat = preds[-1]['rotmat'].view(-1,24,3,3).cpu().numpy()
                 pred_theta = preds[-1]['theta'].view(-1,85).cpu().numpy()
-                print()
 
                 pred_j3ds.append(pred_j3d)
                 pred_verts.append(pred_vert)
