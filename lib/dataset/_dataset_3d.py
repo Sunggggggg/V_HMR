@@ -98,7 +98,8 @@ class Dataset3D(Dataset):
         elif self.dataset_name == 'mpii3d':
             seqname, img = os.path.join(*img_name.split('/')[2:5]), img_name.split('/')[-1]
         elif self.dataset_name == 'h36m':
-            seqname, img = img_name.split('/')[-2:]
+            img_name_len = len('000000.jpg')
+            seqname, img = img_name.split('/')[-2], img_name.split('/')[-1][-img_name_len:]
         
         inp_text = self.caption_db[seqname][img]['text_feat']
         return inp_text
@@ -234,8 +235,7 @@ class Dataset3D(Dataset):
         
         # Text embedding 
         img_names = self.get_sequence(start_index, end_index, self.db['img_name'])  # ./data/3dpw ...
-        mid_index = (end_index - start_index)//2 + 1
-        inp_text = torch.from_numpy(self.load_text_emb(img_names[mid_index])).float()
+        inp_text = torch.from_numpy(self.load_text_emb(img_names[8])).float()
 
         theta_tensor = np.zeros((self.seqlen, 85), dtype=np.float16)
 

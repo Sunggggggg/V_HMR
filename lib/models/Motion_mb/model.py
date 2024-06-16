@@ -23,7 +23,6 @@ class Model(nn.Module):
         self.num_frames = num_frames
         self.mid_frame = num_frames // 2
         self.stride_short = 4
-        self.joint_space = JointTree()
 
         self.t_trans = TEncoder(embed_dim=embed_dim)
         self.s_trans = STEncoder(depth=depth, embed_dim=embed_dim, mlp_ratio=mlp_ratio,
@@ -43,11 +42,18 @@ class Model(nn.Module):
         self.short_encoder = CrossAttention(embed_dim//2)
         self.local_regressor = Regressor(embed_dim//2)
     
+    def refine_2djoint(self, vitpose_2d):
+        vitpose_j2d_pelvis = vitpose_2d[:,:,[11,12],:2].mean(dim=2, keepdim=True) 
+        vitpose_j2d_neck = vitpose_2d[:,:,[5,6],:2].mean(dim=2, keepdim=True)  
+        joint_2d_feats = torch.cat([vitpose_2d[... ,:2], vitpose_j2d_pelvis, vitpose_j2d_neck], dim=2)  
+        
+        return joint_2d_feats
+    
     def forward(self, f_text, f_img, f_joint, is_train=False, J_regressor=None):
         B, T = f_img.shape[:2]
         
         # Joint space
-        f_joint = self.joint_space(f_joint[..., :2])    # [B, T, J, 2]
+        f_joint = self.refine_2djoint(f_joint)      # [B, T, J, 2]
 
         # ST Transformer
         f_temp = self.t_trans(f_text, f_img)        # [B, T, D]
