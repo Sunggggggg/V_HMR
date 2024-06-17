@@ -39,8 +39,8 @@ class Model(nn.Module) :
         self.global_modeling = GMM(num_frames, 2, embed_dim, num_heads, drop_rate, drop_path_rate, attn_drop_rate, 0.5)
 
         # 
-        self.proj_input = nn.Linear(embed_dim//2 + num_joints*32, embed_dim//2)
-        self.i_norm = nn.LayerNorm(embed_dim//2)
+        self.proj_input = nn.Linear(embed_dim//2 + num_joints*32, embed_dim)
+        self.i_norm = nn.LayerNorm(embed_dim)
 
         self.proj_local = nn.Linear(embed_dim, embed_dim//2)
         self.proj_enc_local = nn.Linear(embed_dim, embed_dim//2)
@@ -50,15 +50,13 @@ class Model(nn.Module) :
         self.local_decoder = CrossAttention(embed_dim//2)
 
         # Regressor
-        self.global_regressor = Global_regressor(embed_dim//2)
+        self.global_regressor = Global_regressor(embed_dim)
         self.local_regressor = Local_regressor(embed_dim//2)
         
     def refine_2djoint(self, vitpose_2d):
         vitpose_j2d_pelvis = vitpose_2d[:,:,[11,12],:2].mean(dim=2, keepdim=True) 
         vitpose_j2d_neck = vitpose_2d[:,:,[5,6],:2].mean(dim=2, keepdim=True)  
-        joint_2d_feats = torch.cat([vitpose_2d[... ,:2], vitpose_j2d_pelvis, vitpose_j2d_neck], dim=2)  
-        joint_2d_feats = joint_2d_feats.flatten(-2)
-        
+        joint_2d_feats = torch.cat([vitpose_2d[... ,:2], vitpose_j2d_pelvis, vitpose_j2d_neck], dim=2)          
         return joint_2d_feats
 
     def spatio_transformer(self, x):
