@@ -39,8 +39,8 @@ class Model(nn.Module) :
         self.global_modeling = GMM(num_frames, 2, embed_dim, num_heads, drop_rate, drop_path_rate, attn_drop_rate, 0.5)
 
         # 
-        self.proj_input = nn.Linear(embed_dim//2 + num_joints*32, embed_dim)
-        self.i_norm = nn.LayerNorm(embed_dim)
+        self.proj_input = nn.Linear(embed_dim//2 + num_joints*32, embed_dim//2)
+        self.i_norm = nn.LayerNorm(embed_dim//2)
 
         self.proj_local = nn.Linear(embed_dim, embed_dim//2)
         self.proj_enc_local = nn.Linear(embed_dim, embed_dim//2)
