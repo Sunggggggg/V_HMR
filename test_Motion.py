@@ -17,7 +17,8 @@ from lib.utils.demo_utils import convert_crop_cam_to_orig_img, images_to_video
 from lib.utils.eval_utils import compute_accel, compute_error_accel, batch_compute_similarity_transform_torch, compute_error_verts, compute_errors, plot_accel
 from lib.utils.slerp_filter_utils import quaternion_from_matrix, quaternion_slerp, quaternion_matrix
 
-from lib.models.Motion_baseline.model import Model
+#from lib.models.Motion_baseline.model import Model
+from lib.models.Motion_mb.model import Model
 
 
 def get_sequence(start_index, end_index, seqlen=16):

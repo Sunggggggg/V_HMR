@@ -15,10 +15,9 @@ from lib.utils.utils import prepare_output_dir
 from lib.dataset._loaders import get_data_loaders
 from lib.utils.utils import create_logger, get_optimizer
 #from lib.core.Motion.loss import Loss
-from lib.core.Motion_mb.loss import GLoTLoss
-from lib.core.Motion_mb.trainer import Trainer
-#from lib.models.Motion_baseline.model import Model
-from lib.models.Trans.model import Model
+from lib.core.GLoT.loss import GLoTLoss
+from lib.core.GLoT.trainer import Trainer
+from lib.models.GLoT.GLoT import GLoT 
 
 from lr_scheduler import CosineAnnealingWarmupRestarts
 
@@ -59,7 +58,7 @@ def main(cfg):
         use_accel = cfg.LOSS.use_accel
     )
 
-    model = Model().to(cfg.DEVICE)
+    model = GLoT().to(cfg.DEVICE)
     logger.info(f'net: {model}')
 
     net_params = sum(map(lambda x: x.numel(), model.parameters()))

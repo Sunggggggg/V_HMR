@@ -56,7 +56,6 @@ class GLoT(nn.Module):
         batch_size = input.shape[0]
         joint_2d_feats = self.joint_tree.pelvis_coord_xy(vitpose_j2d[..., :2])
 
-
         pose_feat, st_joint_feats = self.pose_enc(joint_2d_feats, input)
         pose_feat = pose_feat.reshape(batch_size, -1, 2048)     # [B, T, 2048]
         input = self.pose_norm(input + pose_feat)
