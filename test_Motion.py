@@ -104,14 +104,14 @@ if __name__ == "__main__":
         print(f"{cfg.TRAIN.PRETRAINED} is not a pretrained model! Exiting...")
         import sys; sys.exit()
 
-    model.global_regressor.smpl = SMPL(
+    model.global_modeling.regressor = SMPL(
         SMPL_MODEL_DIR,
         batch_size=64,
         create_transl=False,
         gender=gender
     ).cuda()
 
-    model.local_regressor.smpl = SMPL(
+    model.localregressor.smpl = SMPL(
         SMPL_MODEL_DIR,
         batch_size=64,
         create_transl=False,
