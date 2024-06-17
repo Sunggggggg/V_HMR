@@ -17,8 +17,8 @@ from lib.utils.demo_utils import convert_crop_cam_to_orig_img, images_to_video
 from lib.utils.eval_utils import compute_accel, compute_error_accel, batch_compute_similarity_transform_torch, compute_error_verts, compute_errors, plot_accel
 from lib.utils.slerp_filter_utils import quaternion_from_matrix, quaternion_slerp, quaternion_matrix
 
-#from lib.models.Motion_baseline.model import Model
-from lib.models.Motion_mb.model import Model
+from lib.models.Motion_baseline.model2 import Model
+#from lib.models.Motion_mb.model import Model
 
 
 def get_sequence(start_index, end_index, seqlen=16):
@@ -220,7 +220,7 @@ if __name__ == "__main__":
                 input_feat = torch.cat(input_feat, dim=0)
                 input_vitpose = torch.cat(input_vitpose, dim=0)
                 input_text = torch.cat(input_text, dim=0)
-                preds, _, pred_global = model(input_text, input_feat, input_vitpose, J_regressor=J_regressor, is_train=False)
+                preds,  pred_global = model(input_text, input_feat, input_vitpose, J_regressor=J_regressor, is_train=False)
 
                 n_kp = preds[-1]['kp_3d'].shape[-2]
                 pred_j3d = preds[-1]['kp_3d'].view(-1, n_kp, 3).cpu().numpy()

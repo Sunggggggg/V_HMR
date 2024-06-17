@@ -6,12 +6,12 @@ from .encoder import TEncoder, STEncoder
 from .motion_encoder import MotionEncoder, ContextEncoder
 from .regressor import LocalRegressor
 from lib.models.GLoT.GMM import GMM
-from lib.models.trans_operator import CrossAttention
+from lib.models.trans_operator import Block
 
 class Model(nn.Module):
     def __init__(self, 
                  num_frames=16,
-                 num_joints=20,
+                 num_joints=24,
                  embed_dim=512, 
                  depth=3, 
                  num_heads=8, 
@@ -28,6 +28,15 @@ class Model(nn.Module):
         self.jointtree = JointTree()
         self.img_emb = nn.Linear(2048, embed_dim)
         self.joint_emb = nn.Linear(2*num_joints, embed_dim)
+
+        # Spatio transformer
+        self.joint_emb = nn.Linear(2, 32)
+        self.s_pos_embed = nn.Parameter(torch.zeros(1, num_joints, 32))
+        self.pos_drop = nn.Dropout(p=drop_rate)
+        self.spatial_blocks = nn.ModuleList([
+            Block(dim=32, num_heads=num_heads, mlp_hidden_dim=32*4.0) for i in range(2)]
+        )
+        self.s_norm = nn.LayerNorm(32)
 
         # 
         self.proj_motion1 = nn.Sequential(
@@ -46,14 +55,32 @@ class Model(nn.Module):
         
         self.localregressor = LocalRegressor()
     
+    def spatio_transformer(self, x):
+        B, T, J = x.shape[:-1]
+
+        x = self.joint_emb(x)                   # [B, T, 19, 32]
+        x = x.view(B*T, J, -1)                  # [BT, J, 32] 
+        x = x + self.s_pos_embed                # 
+        x = self.pos_drop(x)
+
+        for blk in self.spatial_blocks:
+            x = blk(x)
+
+        x = self.s_norm(x)
+        x = x.reshape(B, T, -1)                 # [B, T, 19*32]
+        return x
+    
     def forward(self, f_text, f_img, vitpose_2d, is_train=False, J_regressor=None):
         B, T = f_img.shape[:2]
+
+        # Spatio transformer
         vitpose_2d = self.jointtree.add_joint(vitpose_2d[..., :2])
         vitpose_2d = self.jointtree.map_kp2joint(vitpose_2d)                    # [B, T, 24, 2]
+        f_joint = self.spatio_transformer(vitpose_2d)  # [B, T, 608]
 
-        # Denoise
-        f = self.img_emb(f_img)                # [B, T, D]
-        smpl_output_global, mask_ids, mem, pred_global = self.global_modeling(f, is_train=is_train, J_regressor=J_regressor)
+        # Temporal transformer
+        f_img = self.img_emb(f_img)                # [B, T, D]
+        smpl_output_global, mask_ids, mem, pred_global = self.global_modeling(f_img, is_train=is_train, J_regressor=J_regressor)
 
         # Joint feat
         f_img_short = f_img[:, self.mid_frame-1 : self.mid_frame+2]             # [B, 3, 2048]

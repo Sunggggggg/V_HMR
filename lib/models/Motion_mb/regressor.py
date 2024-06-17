@@ -191,8 +191,8 @@ class LocalRegressor(nn.Module):
         pred_pose = pred_pose.view(B, T, 24, 6)
         
         for _ in range(3):
-            xc = torch.cat([x, pred_pose], dim=-1)  # [B, 3, J, D+6]
-            xc = self.fc1(xc)                       # [B, 3, J, 1024]
+            xc = torch.cat([x, pred_pose], dim=-1)      # [B, 3, J, D+6]
+            xc = self.fc1(xc)                           # [B, 3, J, 1024]
             xc = self.drop1(xc)
             pred_pose = self.decpose(xc) + pred_pose    # [B, 3, J, 6]
 
