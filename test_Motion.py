@@ -104,19 +104,6 @@ if __name__ == "__main__":
         print(f"{cfg.TRAIN.PRETRAINED} is not a pretrained model! Exiting...")
         import sys; sys.exit()
 
-    model.global_modeling.regressor = SMPL(
-        SMPL_MODEL_DIR,
-        batch_size=64,
-        create_transl=False,
-        gender=gender
-    ).cuda()
-
-    model.localregressor.smpl = SMPL(
-        SMPL_MODEL_DIR,
-        batch_size=64,
-        create_transl=False,
-        gender=gender
-    ).cuda()
     dtype = torch.float
     J_regressor = torch.from_numpy(np.load(osp.join(BASE_DATA_DIR, 'J_regressor_h36m.npy'))).float()
 
@@ -233,7 +220,7 @@ if __name__ == "__main__":
                 input_feat = torch.cat(input_feat, dim=0)
                 input_vitpose = torch.cat(input_vitpose, dim=0)
                 input_text = torch.cat(input_text, dim=0)
-                preds, pred_global = model(input_text, input_feat, input_vitpose, J_regressor=J_regressor, is_train=False)
+                preds, _, pred_global = model(input_text, input_feat, input_vitpose, J_regressor=J_regressor, is_train=False)
 
                 n_kp = preds[-1]['kp_3d'].shape[-2]
                 pred_j3d = preds[-1]['kp_3d'].view(-1, n_kp, 3).cpu().numpy()
