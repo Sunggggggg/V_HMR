@@ -79,8 +79,8 @@ class Model(nn.Module) :
         vitpose_2d = self.spatio_transformer(vitpose_2d)
 
         # Temporal transformer
-        f_img = self.img_emb(f_img)                # [B, T, D]
-        smpl_output_global, mask_ids, mem, pred_global = self.global_modeling(f_img, is_train=is_train, J_regressor=J_regressor)
+        f_gl = self.img_emb(f_img)                # [B, T, D]
+        smpl_output_global, mask_ids, mem, pred_global = self.global_modeling(f_gl, is_train=is_train, J_regressor=J_regressor)
 
         # Joint feat
         f_img_short = f_img[:, self.mid_frame-1 : self.mid_frame+2]             # [B, 3, 2048]
