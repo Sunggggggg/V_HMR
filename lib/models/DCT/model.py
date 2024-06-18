@@ -29,8 +29,6 @@ class Model(nn.Module):
         # 
         self.freq_embedding = nn.Linear(2048, num_joint*32)
 
-
-
     def spatio_transformer(self, x):
         B, T, J = x.shape[:-1]
         mid_frame = T // 2
@@ -56,19 +54,8 @@ class Model(nn.Module):
         B, T = f_img.shape[0]
         f_joint = f_joint[..., :2]
         f_joint = self.jointtree.add_joint(f_joint)
+        
 
-        f_spatio = self.spatio_transformer(f_joint)      # [B, 3, 19*32]
-
-        # 
-        f_img_freq = dct.dct(f_img.permute(0, 2, 1))                        
-        f_img = f_img_freq.permute(0, 2, 1).contiguous().view(B, T, -1)         # [B, T, 2048]
-
-        # f_joint_freq = dct.dct(f_joint.permute(0, 2, 3, 1))
-        # f_joint = f_joint_freq.permute(0, 3, 1, 2).contiguous().view(B, T, -1) # [B, T, J*2]
-
-        f = torch.cat([f_img, f_spatio], dim=-1)
-
-        f_joint = self.joint_emb(f_joint)                                       # [B, T, 19*32]
 
 
 

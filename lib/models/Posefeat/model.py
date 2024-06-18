@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
 
+from .jointspace import JointTree
 from .GMM import GMM
 from lib.models.trans_operator import Block
-from .regressor import Global_regressor, Local_regressor
+from .regressor import GlobalRegressor, LocalRegressor
 from .transformer import Transformer
 from ..trans_operator import CrossAttention
 
@@ -21,6 +22,8 @@ class Model(nn.Module) :
                  ):
         super().__init__()
         self.mid_frame = num_frames//2
+        self.jointtree = JointTree()
+
         # Spatio transformer
         self.joint_emb = nn.Linear(2, 32)
         self.s_pos_embed = nn.Parameter(torch.zeros(1, num_joints, 32))
@@ -35,19 +38,19 @@ class Model(nn.Module) :
         self.global_modeling = GMM(num_frames, 2, embed_dim, num_heads, drop_rate, drop_path_rate, attn_drop_rate, 0.5)
 
         # 
-        self.proj_input = nn.Linear(embed_dim//2 + num_joints*32, embed_dim)
+        self.proj_input = nn.Linear(embed_dim//2 + num_joints*32, embed_dim//2)
         self.i_norm = nn.LayerNorm(embed_dim)
 
-        self.proj_local = nn.Linear(embed_dim, embed_dim//2)
-        self.proj_enc_local = nn.Linear(embed_dim, embed_dim//2)
+        self.proj_local = nn.Linear(embed_dim//2, embed_dim//2)
+        self.proj_enc_local = nn.Linear(embed_dim//2, embed_dim//2)
         self.local_encoder = Transformer(depth=3, embed_dim=embed_dim//2, mlp_hidden_dim=embed_dim,
             h=num_heads, drop_rate=drop_rate, drop_path_rate=drop_path_rate, 
             attn_drop_rate=attn_drop_rate, length=3)
         self.local_decoder = CrossAttention(embed_dim//2)
 
         # Regressor
-        self.global_regressor = Global_regressor(embed_dim)
-        self.local_regressor = Local_regressor(embed_dim//2)
+        self.global_regressor = GlobalRegressor(embed_dim//2)
+        self.local_regressor = LocalRegressor(embed_dim//2)
         
     def refine_2djoint(self, vitpose_2d):
         vitpose_j2d_pelvis = vitpose_2d[:,:,[11,12],:2].mean(dim=2, keepdim=True) 
@@ -60,14 +63,12 @@ class Model(nn.Module) :
 
         x = self.joint_emb(x)                   # [B, T, 19, 32]
         x = x.view(B*T, J, -1)                  # [BT, J, 32]
-        _x = x 
         x = x + self.s_pos_embed                # 
         x = self.pos_drop(x)
 
         for blk in self.spatial_blocks:
             x = blk(x)
 
-        x = x + _x
         x = self.s_norm(x)
         x = x.reshape(B, T, -1)                 # [B, T, 19*32]
         return x
@@ -77,7 +78,7 @@ class Model(nn.Module) :
         x : [B, 1, 512]
         """
 
-    def forward(self, f_text, f_img, f_joint, is_train=False, J_regressor=None) :
+    def forward(self, f_text, f_img, vitpose_2d, is_train=False, J_regressor=None) :
         """
         f_text      : [B, 1, 512]
         f_img       : [B, T, 2048]
@@ -86,8 +87,9 @@ class Model(nn.Module) :
         B, T = f_img.shape[:2]
 
         # Spatio transformer
-        f_joint = self.refine_2djoint(f_joint)      # [B, T, (J+2)*2]
-        f_joint = self.spatio_transformer(f_joint)  # [B, T, 608]
+        vitpose_2d = self.jointtree.add_joint(vitpose_2d[..., :2])
+        vitpose_2d = self.jointtree.map_kp2joint(vitpose_2d)    # [B, T, 24, 2]
+        f_joint = self.spatio_transformer(f_joint)              # [B, T, 608]
 
         # Temporal transformer
         f_img = self.proj_img(f_img)                            # [B, T, 512]
