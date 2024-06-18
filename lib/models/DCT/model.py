@@ -31,11 +31,9 @@ class Model(nn.Module):
 
     def spatio_transformer(self, x):
         B, T, J = x.shape[:-1]
-        mid_frame = T // 2
-        x = x[:, mid_frame-1 : mid_frame+2]     # [B, 3, 19, 32]
 
         x = self.joint_emb(x)                   # [B, 3, 19, 32]
-        x = x.view(B*3, J, -1)                  # [B3, J, 32] 
+        x = x.view(B*T, J, -1)                  # [BT, J, 32] 
         x = x + self.s_pos_embed                # 
         x = self.pos_drop(x)
 
@@ -43,17 +41,20 @@ class Model(nn.Module):
             x = blk(x)
 
         x = self.s_norm(x)
-        x = x.reshape(B, 3, -1)                 # [B, 3, 19*32]
+        x = x.reshape(B, T, -1)                 # [B, 3, 19*32]
         return x
 
-    def forward(self, f_text, f_img, f_joint, is_train=False, J_regressor=None) :
+    def forward(self, f_text, f_img, vitpose_2d, is_train=False, J_regressor=None) :
         """
         f_img       : [B, T, 2048]
         f_joint     : [B, T, J, 2]
         """
-        B, T = f_img.shape[0]
-        f_joint = f_joint[..., :2]
-        f_joint = self.jointtree.add_joint(f_joint)
+        vitpose_2d = self.jointtree.add_joint(vitpose_2d[..., :2])
+        vitpose_2d = self.jointtree.map_kp2joint(vitpose_2d)        # [B, T, 24, 2]
+        freq_vitpose_2d = dct.dct(vitpose_2d.permute(0, 2, 3, 1))
+
+
+        
         
 
 
