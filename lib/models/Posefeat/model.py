@@ -11,7 +11,7 @@ from ..trans_operator import CrossAttention
 class Model(nn.Module) :
     def __init__(self, 
                  num_frames=16,
-                 num_joints=19,
+                 num_joints=24,
                  embed_dim=512, 
                  depth=3, 
                  num_heads=8, 
