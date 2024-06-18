@@ -89,7 +89,7 @@ class Model(nn.Module) :
         # Spatio transformer
         vitpose_2d = self.jointtree.add_joint(vitpose_2d[..., :2])
         vitpose_2d = self.jointtree.map_kp2joint(vitpose_2d)    # [B, T, 24, 2]
-        f_joint = self.spatio_transformer(f_joint)              # [B, T, 608]
+        f_joint = self.spatio_transformer(vitpose_2d)           # [B, T, 608]
 
         # Temporal transformer
         f_img = self.proj_img(f_img)                            # [B, T, 512]
