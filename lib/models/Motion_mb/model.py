@@ -59,13 +59,15 @@ class Model(nn.Module):
         B, T, J = x.shape[:-1]
 
         x = self.joint_emb(x)                   # [B, T, 19, 32]
-        x = x.view(B*T, J, -1)                  # [BT, J, 32] 
+        x = x.view(B*T, J, -1)                  # [BT, J, 32]
+        _x = x 
         x = x + self.s_pos_embed                # 
         x = self.pos_drop(x)
 
         for blk in self.spatial_blocks:
             x = blk(x)
 
+        x = x + _x
         x = self.s_norm(x)
         x = x.reshape(B, T, -1)                 # [B, T, 19*32]
         return x
@@ -76,7 +78,7 @@ class Model(nn.Module):
         # Spatio transformer
         vitpose_2d = self.jointtree.add_joint(vitpose_2d[..., :2])
         vitpose_2d = self.jointtree.map_kp2joint(vitpose_2d)                    # [B, T, 24, 2]
-        f_joint = self.spatio_transformer(vitpose_2d)  # [B, T, 608]
+        f_joint = self.spatio_transformer(vitpose_2d)                           # [B, T, 608] 608=19*32
 
         # Temporal transformer
         f_img = self.img_emb(f_img)                # [B, T, D]

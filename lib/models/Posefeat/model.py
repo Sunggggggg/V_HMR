@@ -21,10 +21,6 @@ class Model(nn.Module) :
                  ):
         super().__init__()
         self.mid_frame = num_frames//2
-        # Text token
-        # self.motion = nn.Parameter(torch.zeros(1, num_joints, embed_dim))
-        # self.context = nn.Parameter(torch.zeros(1, num_frames, embed_dim))
-
         # Spatio transformer
         self.joint_emb = nn.Linear(2, 32)
         self.s_pos_embed = nn.Parameter(torch.zeros(1, num_joints, 32))
@@ -99,8 +95,6 @@ class Model(nn.Module) :
 
         f = torch.cat([f_img, f_joint], dim=-1)                 # [B, T, 256+608]
         f = self.proj_input(f)
-
-        f = self.i_norm(f_text + f)                             # [B, T, D]
         
         if is_train :
             f_global_output = f

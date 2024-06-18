@@ -19,7 +19,7 @@ from lib.core.Motion.loss import Loss
 from lib.core.Motion.trainer import Trainer
 #from lib.models.Motion_baseline.model import Model
 #from lib.models.Trans.model import Model
-from lib.models.Motion_baseline.model2 import Model
+from lib.models.Posefeat.model import Model
 
 from lr_scheduler import CosineAnnealingWarmupRestarts
 
