@@ -4,7 +4,7 @@ import torch.nn as nn
 from .jointspace import JointTree
 from lib.models.GLoT.GMM import GMM
 from lib.models.trans_operator import Block
-from .regressor import GlobalRegressor, LocalRegressor
+from .regressor import LocalRegressor
 from lib.models.Motion_mb.encoder import STEncoder
 
 class Model(nn.Module) :
