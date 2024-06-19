@@ -60,14 +60,12 @@ class Model(nn.Module):
 
         x = self.joint_emb(x)                   # [B, T, 19, 32]
         x = x.view(B*T, J, -1)                  # [BT, J, 32]
-        _x = x 
         x = x + self.s_pos_embed                # 
         x = self.pos_drop(x)
 
         for blk in self.spatial_blocks:
             x = blk(x)
 
-        x = x + _x
         x = self.s_norm(x)
         x = x.reshape(B, T, -1)                 # [B, T, 19*32]
         return x

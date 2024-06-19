@@ -1,11 +1,12 @@
 import torch
 import torch.nn as nn
 
-from .jointspace import JointTree
-from lib.models.GLoT.GMM import GMM
 from lib.models.trans_operator import Block
-from .regressor import LocalRegressor
-from lib.models.Motion_mb.encoder import STEncoder
+
+from .jointspace import JointTree
+from .GMM import GMM
+from .regressor import LocalRegressor, GlobalRegressor
+from .transformer import STEncoder
 
 class Model(nn.Module) :
     def __init__(self, 
@@ -40,14 +41,20 @@ class Model(nn.Module) :
             num_heads=num_heads, drop_rate=drop_rate, drop_path_rate=drop_path_rate, 
             attn_drop_rate=attn_drop_rate)
         
+        # ST transformer 
+        self.st_trans = STEncoder(num_frames=3, num_joints=24, depth=depth, embed_dim=embed_dim//2, mlp_ratio=mlp_ratio,
+            num_heads=num_heads, drop_rate=drop_rate, drop_path_rate=drop_path_rate, 
+            attn_drop_rate=attn_drop_rate)
+        
+        self.proj_input = nn.Linear(embed_dim//2 + num_joints*32, embed_dim)
+        self.i_norm = nn.LayerNorm(embed_dim)
+        self.global_regressor = GlobalRegressor(embed_dim)
         self.localregressor = LocalRegressor()
         
-
     def spatio_transformer(self, x):
         B, T, J = x.shape[:-1]
-        init_x = x
 
-        x = self.joint_emb(x)                   # [B, T, 19, 32]
+        x = self.joint_emb(x)                   # [B, T, J, 32]
         x = x.view(B*T, J, -1)                  # [BT, J, 32]
         x = x + self.s_pos_embed                # 
         x = self.pos_drop(x)
@@ -55,15 +62,9 @@ class Model(nn.Module) :
         for blk in self.spatial_blocks:
             x = blk(x)
 
-        x = self.s_norm(x)                          # [BT, J, 32]
-        x = self.joint_head(x).reshape(B, T, J, -1) # [B, T, J, 2]
-        x = init_x + x
+        x = self.s_norm(x)      # [BT, J, 32]
+        x = x.reshape(B, T, -1) # [B, T, 19*32]
         return x
-
-    def disentangle_text(self, x):
-        """
-        x : [B, 1, 512]
-        """
 
     def forward(self, f_text, f_img, vitpose_2d, is_train=False, J_regressor=None) :
         """
@@ -76,25 +77,33 @@ class Model(nn.Module) :
         # Spatio transformer
         vitpose_2d = self.jointtree.add_joint(vitpose_2d[..., :2])
         vitpose_2d = self.jointtree.map_kp2joint(vitpose_2d)        # [B, T, 24, 2]
-        vitpose_2d = self.spatio_transformer(vitpose_2d)
+        f_joint = self.spatio_transformer(vitpose_2d)
 
         # Temporal transformer
-        f_gl = self.img_emb(f_img)                # [B, T, D]
-        smpl_output_global, mask_ids, mem, pred_global = self.global_modeling(f_gl, is_train=is_train, J_regressor=J_regressor)
+        f_temp = self.img_emb(f_img)
+        f_temp = self.global_modeling(f_temp, is_train=is_train)  # [B, T, 256]
+
+        f = torch.cat([f_temp, f_joint], dim=-1)                 # [B, T, 256+608]
+        f = self.proj_input(f)
+        f = self.i_norm(f) 
+
+        if is_train :
+            f_global_output = f
+        else :
+            f_global_output = f[:, self.mid_frame:self.mid_frame+1]
+        smpl_output_global, pred_global = self.global_regressor(f_global_output, n_iter=3, is_train=is_train, J_regressor=J_regressor)
 
         # Joint feat
         f_img_short = f_img[:, self.mid_frame-1 : self.mid_frame+2]             # [B, 3, 2048]
         vitpose_2d_short = vitpose_2d[:, self.mid_frame-1 : self.mid_frame+2]   # [B, 3, 24, 2]
         f_st = self.st_trans(f_img_short, vitpose_2d_short)                     # [B, 3, 24, D]
         
-        init_pose, init_shape, init_cam = pred_global[0], pred_global[1], pred_global[2]    # [B, T=3, 144/10/3] if is_train else T=1
-        
         if is_train :
             f_st = f_st
         else :
             f_st = f_st[:, 1][:, None]
     
-        smpl_output = self.localregressor(f_st, init_pose, init_shape, init_cam, is_train=is_train, J_regressor=J_regressor)
+        smpl_output = self.localregressor(f_st, pred_global[0], pred_global[1], pred_global[2], is_train=is_train, J_regressor=J_regressor)
 
         scores = None
         if not is_train:

@@ -1,12 +1,9 @@
 import torch
 import os.path as osp
 import torch.nn as nn
-import os
 from lib.core.config import BASE_DATA_DIR
-from lib.models.GLoT.spin import Regressor
 from lib.models.GLoT.transformer_global import Transformer
 import torch.nn.functional as F
-import importlib
 
 class GMM(nn.Module):
     def __init__(
@@ -31,8 +28,6 @@ class GMM(nn.Module):
         self.mask_ratio = mask_ratio
 
     def forward(self, input, is_train=False):
-        batch_size, seqlen = input.shape[:2]
-
         #input = self.proj(input)
         if is_train:
             mem, mask_ids, ids_restore = self.trans.forward_encoder(input, mask_flag=True, mask_ratio=self.mask_ratio)

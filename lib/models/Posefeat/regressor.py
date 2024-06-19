@@ -4,9 +4,9 @@ import torch.nn as nn
 from ..smpl import SMPL, SMPL_MODEL_DIR, H36M_TO_J14, SMPL_MEAN_PARAMS
 from lib.utils.geometry import rotation_matrix_to_angle_axis, rot6d_to_rotmat
 
-class Regressor(nn.Module):
+class GlobalRegressor(nn.Module):
     def __init__(self, dim, smpl_mean_params=SMPL_MEAN_PARAMS):
-        super(Regressor, self).__init__()
+        super(GlobalRegressor, self).__init__()
 
         npose = 24 * 6
 
@@ -47,6 +47,8 @@ class Regressor(nn.Module):
             nn.init.constant_(m.weight, 1.0)
 
     def forward(self, x, init_pose=None, init_shape=None, init_cam=None, n_iter=3, is_train=False, J_regressor=None):
+        B, T = x.shape[:2]
+        
         seq_len = x.shape[1]
         x = x.reshape(-1, x.size(-1))
         batch_size = x.shape[0]
@@ -113,6 +115,15 @@ class Regressor(nn.Module):
             'kp_3d'  : pred_joints,
             'rotmat' : pred_rotmat
         }]
+
+        scores = None
+        for s in output:
+            s['theta'] = s['theta'].reshape(B, T, -1)
+            s['verts'] = s['verts'].reshape(B, T, -1, 3)
+            s['kp_2d'] = s['kp_2d'].reshape(B, T, -1, 2)
+            s['kp_3d'] = s['kp_3d'].reshape(B, T, -1, 3)
+            s['rotmat'] = s['rotmat'].reshape(B, T, -1, 3, 3)
+            s['scores'] = scores
 
         
         return output, (next_init_pose, next_init_shape, next_init_cam)
