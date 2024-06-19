@@ -35,7 +35,7 @@ class GMM(nn.Module):
             mem, mask_ids, ids_restore = self.trans.forward_encoder(input, mask_flag=False, mask_ratio=0.)
         pred = self.trans.forward_decoder(mem, ids_restore)  # [N, L, p*p*3]
 
-        return pred
+        return pred, mask_ids
 
     def initialize_weights(self):
         torch.nn.init.normal_(self.trans.pos_embed, std=.02)

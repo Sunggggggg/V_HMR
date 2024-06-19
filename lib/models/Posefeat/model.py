@@ -81,7 +81,7 @@ class Model(nn.Module) :
 
         # Temporal transformer
         f_temp = self.img_emb(f_img)
-        f_temp = self.global_modeling(f_temp, is_train=is_train)  # [B, T, 256]
+        f_temp, mask_ids = self.global_modeling(f_temp, is_train=is_train)  # [B, T, 256]
 
         f = torch.cat([f_temp, f_joint], dim=-1)                 # [B, T, 256+608]
         f = self.proj_input(f)
