@@ -73,7 +73,7 @@ class GLoTLoss(nn.Module):
             data_3d,
             vitpose_2d,
             mask_ids,
-            data_body_mosh=None,
+            scores=None,
             data_motion_mosh=None,
             body_discriminator=None,
             motion_discriminator=None,

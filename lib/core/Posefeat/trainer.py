@@ -174,8 +174,8 @@ class Trainer():
                 data_2d=target_2d,
                 data_3d=target_3d,
                 vitpose_2d=vitpose_2d_short,
-                scores=None, 
-                mask_ids=mask_ids
+                mask_ids=mask_ids,
+                scores=None,
             )
 
             timer['loss'] = time.time() - start
