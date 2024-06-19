@@ -15,8 +15,8 @@ from lib.utils.utils import prepare_output_dir
 from lib.dataset._loaders import get_data_loaders
 from lib.utils.utils import create_logger, get_optimizer
 #from lib.core.Motion.loss import Loss
-from lib.core.Motion_mb.loss import GLoTLoss
-from lib.core.Motion_mb.trainer import Trainer
+from lib.core.Posefeat.loss import GLoTLoss
+from lib.core.Posefeat.trainer import Trainer
 #from lib.models.Motion_baseline.model import Model
 #from lib.models.Trans.model import Model
 from lib.models.Posefeat.model import Model

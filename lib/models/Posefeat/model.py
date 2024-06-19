@@ -11,7 +11,7 @@ from .transformer import STEncoder
 class Model(nn.Module) :
     def __init__(self, 
                  num_frames=16,
-                 num_joints=24,
+                 num_joints=20,
                  embed_dim=512, 
                  depth=3, 
                  num_heads=8, 
@@ -37,14 +37,16 @@ class Model(nn.Module) :
         # Temporal transformer
         self.img_emb = nn.Linear(2048, embed_dim)
         self.global_modeling = GMM(num_frames, depth, embed_dim, num_heads, drop_rate, drop_path_rate, attn_drop_rate, 0.5)
+
+        # ST transformer
         self.st_trans = STEncoder(num_frames=3, num_joints=24, depth=depth, embed_dim=embed_dim//2, mlp_ratio=mlp_ratio,
             num_heads=num_heads, drop_rate=drop_rate, drop_path_rate=drop_path_rate, 
             attn_drop_rate=attn_drop_rate)
-        
-        # ST transformer 
-        self.st_trans = STEncoder(num_frames=3, num_joints=24, depth=depth, embed_dim=embed_dim//2, mlp_ratio=mlp_ratio,
-            num_heads=num_heads, drop_rate=drop_rate, drop_path_rate=drop_path_rate, 
-            attn_drop_rate=attn_drop_rate)
+        self.pose_head = nn.Sequential(
+            nn.LayerNorm(embed_dim//2),
+            nn.Linear(embed_dim//2, 2)
+        )
+        self.pose_encoding = nn.Linear(2, embed_dim//2)
         
         self.proj_input = nn.Linear(embed_dim//2 + num_joints*32, embed_dim)
         self.i_norm = nn.LayerNorm(embed_dim)
@@ -75,8 +77,7 @@ class Model(nn.Module) :
         B, T = f_img.shape[:2]
 
         # Spatio transformer
-        vitpose_2d = self.jointtree.add_joint(vitpose_2d[..., :2])
-        vitpose_2d = self.jointtree.map_kp2joint(vitpose_2d)        # [B, T, 24, 2]
+        vitpose_2d = self.jointtree.add_joint(vitpose_2d[..., :2])  # [B, T, 20, 2]
         f_joint = self.spatio_transformer(vitpose_2d)
 
         # Temporal transformer
@@ -94,10 +95,13 @@ class Model(nn.Module) :
         smpl_output_global, pred_global = self.global_regressor(f_global_output, n_iter=3, is_train=is_train, J_regressor=J_regressor)
 
         # Joint feat
+        vitpose_2d = self.jointtree.map_kp2joint(vitpose_2d)                    # [B, T, 24, 2]
         f_img_short = f_img[:, self.mid_frame-1 : self.mid_frame+2]             # [B, 3, 2048]
         vitpose_2d_short = vitpose_2d[:, self.mid_frame-1 : self.mid_frame+2]   # [B, 3, 24, 2]
         f_st = self.st_trans(f_img_short, vitpose_2d_short)                     # [B, 3, 24, D]
-        
+        vitpose_2d_short = vitpose_2d_short + self.pose_head(f_st)
+        f_st = self.pose_encoding(vitpose_2d_short)
+
         if is_train :
             f_st = f_st
         else :
@@ -125,4 +129,4 @@ class Model(nn.Module) :
                 s['rotmat'] = s['rotmat'].reshape(B, size, -1, 3, 3)
                 s['scores'] = scores
 
-        return smpl_output, mask_ids, smpl_output_global
+        return smpl_output, mask_ids, smpl_output_global, vitpose_2d_short
