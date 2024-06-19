@@ -178,7 +178,7 @@ class GLoTLoss(nn.Module):
         # Generator Loss
         if vitpose_2d is not None :
             vitpose_2d = reduce(vitpose_2d)
-            loss_vitpose_2d = self.keypoint_loss(vitpose_2d, real_2d, openpose_weight=1., gt_weight=1., mask_2d_3d=mask_2d_3d) * self.e_loss_weight
+            loss_vitpose_2d = self.keypoint_loss(vitpose_2d, real_2d, openpose_weight=1., gt_weight=1., mask_2d_3d=None) * self.e_loss_weight
         else :
             loss_vitpose_2d = None
         loss_kp_2d = self.keypoint_loss(pred_j2d, real_2d, openpose_weight=1., gt_weight=1., mask_2d_3d=mask_2d_3d) * self.e_loss_weight
