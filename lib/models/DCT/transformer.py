@@ -320,19 +320,20 @@ class FreqTempEncoder(nn.Module) :
         self.joint_embedding = nn.Linear(2, embed_dim)
         self.freq_embedding = nn.Linear(2, embed_dim)
 
-        self.joint_pos_embedding = nn.Parameter(torch.zeros(1, 3, num_joints, embed_dim))
-        self.freq_pos_embedding = nn.Parameter(torch.zeros(1, num_coeff_keep, num_joints, embed_dim))
+        model_dim = embed_dim*num_joints
+        self.joint_pos_embedding = nn.Parameter(torch.zeros(1, 3, model_dim))
+        self.freq_pos_embedding = nn.Parameter(torch.zeros(1, num_coeff_keep, model_dim))
 
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  # stochastic depth decay rule
         self.blocks = nn.ModuleList([
             FreqTempBlock(
-                dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,
+                dim=model_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,
                 drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer)
         for i in range(depth)])
 
         self.joint_head = nn.Sequential(
-            nn.LayerNorm(embed_dim),
-            CrossAttention(embed_dim, num_heads, qkv_bias, qk_scale, attn_drop_rate, drop_rate)
+            nn.LayerNorm(model_dim),
+            CrossAttention(model_dim, num_heads, qkv_bias, qk_scale, attn_drop_rate, drop_rate)
         )
         
     def LBF(self, x) :
@@ -341,7 +342,7 @@ class FreqTempEncoder(nn.Module) :
         """
         B, T, J = x.shape[:-1]
         x = dct.dct(x.permute(0, 2, 3, 1))[..., :self.num_coeff_keep]
-        x = x.permute(0, 3, 1, 2).contiguous().view(B, self.num_coeff_keep, J, -1)
+        x = x.permute(0, 3, 1, 2).contiguous().view(B, self.num_coeff_keep, -1) # [B, k, J*32]
 
         return x
 
@@ -351,15 +352,14 @@ class FreqTempEncoder(nn.Module) :
         joint_feat = short_2d_joint             # [B, 3, J, 2]
 
         freq_feat = self.freq_embedding(freq_feat)
-        joint_feat = self.joint_embedding(joint_feat)
+        freq_feat = freq_feat + self.freq_pos_embedding     # [B, k, J*32]
 
-        freq_feat = freq_feat + self.freq_pos_embedding
-        joint_feat = joint_feat + self.joint_pos_embedding
+        joint_feat = self.joint_embedding(joint_feat)       # [B, 3, J, 32]
+        joint_feat = joint_feat.flatten(-2)
+        joint_feat = joint_feat + self.joint_pos_embedding  # [B, 3, J*32]
 
         for blk in self.blocks:
             joint_feat, freq_feat = blk(joint_feat, freq_feat)
         
-        joint_feat = self.joint_head(joint_feat, freq_feat) # [B, 3, 24, 32]
-        joint_feat = joint_feat.flatten(-2)
-        
+        joint_feat = self.joint_head(joint_feat, freq_feat) # [B, 3, J*32]
         return joint_feat

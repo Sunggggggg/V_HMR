@@ -41,7 +41,8 @@ class Model(nn.Module):
         self.local_trans_en = Transformer(depth=2, embed_dim=short_d_model, mlp_hidden_dim=short_d_model*4, 
                                           h=num_heads, length=3)
         
-        self.local_regressor = LocalRegressor(short_d_model + 32*num_joints)
+        self.proj_input2 = nn.Linear(embed_dim//2 + num_joints*32, embed_dim)
+        self.local_regressor = LocalRegressor(embed_dim)
         
 
     def forward(self, f_text, f_img, vitpose_2d, is_train=False, J_regressor=None) :
@@ -77,7 +78,8 @@ class Model(nn.Module):
         latent = self.proj_latent(latent)
         short_f_temp = self.local_trans_de(short_img, latent)                   # [B, 3, d]
 
-        f_st = torch.cat([short_f_temp, short_f_joint], dim=-1)         
+        f_st = torch.cat([short_f_temp, short_f_joint], dim=-1)
+        f_st = self.proj_input2(f_st)         
         if is_train :
             f_st = f_st
         else :
