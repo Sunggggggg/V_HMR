@@ -30,18 +30,7 @@ class Model(nn.Module):
         self.freq_embedding = nn.Linear(2048, num_joint*32)
 
     def spatio_transformer(self, x):
-        B, T, J = x.shape[:-1]
-
-        x = self.joint_emb(x)                   # [B, 3, 19, 32]
-        x = x.view(B*T, J, -1)                  # [BT, J, 32] 
-        x = x + self.s_pos_embed                # 
-        x = self.pos_drop(x)
-
-        for blk in self.spatial_blocks:
-            x = blk(x)
-
-        x = self.s_norm(x)
-        x = x.reshape(B, T, -1)                 # [B, 3, 19*32]
+        
         return x
 
     def forward(self, f_text, f_img, vitpose_2d, is_train=False, J_regressor=None) :

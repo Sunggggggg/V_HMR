@@ -124,7 +124,7 @@ class Model(nn.Module) :
             for s in smpl_output:
                 s['theta'] = s['theta'].reshape(B, size, -1)
                 s['verts'] = s['verts'].reshape(B, size, -1, 3)
-                s['kp_2d'] = s['kp_2d'].reshape(B, size, -1, 2)
+                s['kp_2d'] = s['kp_2d'].reshape(B, size, -1, 2)         # [B, 3, 24, 2]
                 s['kp_3d'] = s['kp_3d'].reshape(B, size, -1, 3)
                 s['rotmat'] = s['rotmat'].reshape(B, size, -1, 3, 3)
                 s['scores'] = scores
