@@ -320,10 +320,7 @@ class FreqTempEncoder(nn.Module) :
                 dim=embed_dim*num_joints, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,
                 drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer)
         for i in range(depth)])
-
-        self.joint_head = CrossAttention(model_dim, num_heads, qkv_bias, qk_scale, attn_drop_rate, drop_rate)
-        self.joint_norm = nn.LayerNorm(model_dim)
-
+        
     def LBF(self, x) :
         """
         x : [B, T, J, 2]
