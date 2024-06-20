@@ -116,7 +116,6 @@ class GLoTLoss(nn.Module):
             'loss_accel_3d_global': loss_accel_3d_global,
             'loss_accel_2d_local': loss_accel_2d_local,
             'loss_accel_3d_local': loss_accel_3d_local,
-            'loss_vitpose_2d' : loss_vitpose_2d
         }
 
         if loss_pose_global is not None:
