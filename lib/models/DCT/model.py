@@ -47,7 +47,7 @@ class Model(nn.Module):
         B = f_img.shape[0]
         # Temp transformer
         f_temp = self.img_emb(f_img)
-        f_temp, mask_ids, latent = self.temp_encoder(f_temp, is_train=True, mask_ratio=0.5)
+        f_temp, mask_ids, latent = self.temp_encoder(f_temp, is_train=is_train, mask_ratio=0.5)
 
         # Joint
         vitpose_2d = self.jointtree.add_joint(vitpose_2d[..., :2])
