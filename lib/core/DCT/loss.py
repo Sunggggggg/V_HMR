@@ -101,7 +101,7 @@ class GLoTLoss(nn.Module):
         real_3d_theta = data_3d['theta'][:, seq_len // 2 - 1: seq_len // 2 + 2]
         w_3d = data_3d['w_3d'].type(torch.bool)[:, seq_len // 2 - 1: seq_len // 2 + 2]
         w_smpl = data_3d['w_smpl'].type(torch.bool)[:, seq_len // 2 - 1: seq_len // 2 + 2]
-        loss_kp_2d_local, loss_kp_3d_local, loss_accel_2d_local, loss_accel_3d_local, loss_pose_local, loss_shape_local, loss_vitpose_2d = self.cal_loss(sample_2d_count, \
+        loss_kp_2d_local, loss_kp_3d_local, loss_accel_2d_local, loss_accel_3d_local, loss_pose_local, loss_shape_local = self.cal_loss(sample_2d_count, \
             real_2d, real_3d, real_3d_theta, w_3d, w_smpl, reduce, flatten, generator_outputs_local)
 
         # 
