@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-import torch_dct as dct
+from functools import partial 
 from .jointspace import JointTree
 from .transformer import TemporalEncoder, JointEncoder, FreqTempEncoder, CrossAttention, Transformer
 from .regressor import LocalRegressor, GlobalRegressor
@@ -31,7 +31,7 @@ class Model(nn.Module):
         self.global_regressor = GlobalRegressor(embed_dim)
 
         # Freqtemp transformer
-        self.joint_refiner = FreqTempEncoder(num_joints, 32, 3)
+        self.joint_refiner = FreqTempEncoder(num_joints, 32, 3, norm_layer=partial(nn.LayerNorm, eps=1e-6))
 
         # Local encoder
         short_d_model = embed_dim//2
