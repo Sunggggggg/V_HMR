@@ -204,15 +204,15 @@ class Trainer():
             start = time.time()
 
             summary_string = f'({i + 1}/{self.num_iters_per_epoch}) | Total: {bar.elapsed_td} | ' \
-                             f'ETA: {bar.eta_td:} | loss: {losses.avg:.2f} | 2d: {kp_2d_loss.avg:.2f} ' \
-                             f'| 3d: {kp_3d_loss.avg:.2f} 2d_local: {kp_2d_loss_local.avg:.2f} ' \
-                             f'| 3d_local: {kp_3d_loss_local.avg:.2f} 2d_global_accel: {accel_loss_global_2d.avg:.2f} ' \
-                             f'| 3d_global_accel: {accel_loss_global_3d.avg:.2f} ' \
-                             f'| 2d_local_accel: {accel_loss_local_2d.avg:.2f} ' \
-                             f'| 3d_local_accel: {accel_loss_local_3d.avg:.2f} '
+                             f'ETA: {bar.eta_td:} | loss: {losses.avg:.4f} | 2d: {kp_2d_loss.avg:.4f} ' \
+                             f'| 3d: {kp_3d_loss.avg:.4f} 2d_local: {kp_2d_loss_local.avg:.4f} ' \
+                             f'| 3d_local: {kp_3d_loss_local.avg:.4f} 2d_global_accel: {accel_loss_global_2d.avg:.4f} ' \
+                             f'| 3d_global_accel: {accel_loss_global_3d.avg:.4f} ' \
+                             f'| 2d_local_accel: {accel_loss_local_2d.avg:.4f} ' \
+                             f'| 3d_local_accel: {accel_loss_local_3d.avg:.4f} '
 
             for k,v in timer.items():
-                summary_string += f' | {k}: {v:.2f}'
+                summary_string += f' | {k}: {v:.4f}'
 
             self.train_global_step += 1
             bar.suffix = summary_string
@@ -281,8 +281,8 @@ class Trainer():
         for epoch in range(self.start_epoch, self.end_epoch):
             self.epoch = epoch
             self.train()
-            self.validate()
             if epoch + 1 >= self.val_epoch:
+                self.validate()
                 performance = self.evaluate()
 
             # log the learning rate
