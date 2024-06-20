@@ -19,7 +19,7 @@ from lib.core.Posefeat.loss import GLoTLoss
 from lib.core.Posefeat.trainer import Trainer
 #from lib.models.Motion_baseline.model import Model
 #from lib.models.Trans.model import Model
-from lib.models.Posefeat.model import Model
+from lib.models.DCT.model import Model
 
 from lr_scheduler import CosineAnnealingWarmupRestarts
 

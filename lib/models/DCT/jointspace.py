@@ -23,20 +23,20 @@ joint2kp = [
 ]
 
 kp2joint = [
-    17, # 0
-    11, # 1
-    12, # 2
-    17, # 3
-    13, # 4
-    14, # 5
-    20, # 6
-    15, # 7
-    16, # 8
-    19, # 9
-    15, # 10
-    16, # 11
-    18, # 12
-    5,  # 13
+    17, # 0(Pelvis)
+    11, # 1(Left Hip)
+    12, # 2(Right Hip)
+    17, # 3(Spine3)
+    13, # 4(Left Knee)
+    14, # 5(Right Knee)
+    20, # 6(Spine6)
+    15, # 7(Left Ankle)
+    16, # 8(Right Ankle)
+    19, # 9(Spine9)
+    15, # 10(Left Toe)
+    16, # 11(Right Toe)
+    18, # 12(Neck)
+    5,  # 13()
     6,  # 14
     0,  # 15
     5,  # 16
