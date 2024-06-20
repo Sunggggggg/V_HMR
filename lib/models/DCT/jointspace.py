@@ -29,7 +29,7 @@ kp2joint = [
     17, # 3(Spine3)
     13, # 4(Left Knee)
     14, # 5(Right Knee)
-    20, # 6(Spine6)
+    19, # 6(Spine6)
     15, # 7(Left Ankle)
     16, # 8(Right Ankle)
     19, # 9(Spine9)
