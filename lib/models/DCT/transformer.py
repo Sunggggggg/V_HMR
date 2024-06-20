@@ -317,10 +317,10 @@ class FreqTempEncoder(nn.Module) :
         self.num_coeff_keep = num_coeff_keep 
 
         # spatial patch embedding
-        self.joint_embedding = nn.Linear(2, embed_dim)
-        self.freq_embedding = nn.Linear(2, embed_dim)
-
         model_dim = embed_dim*num_joints
+        self.joint_embedding = nn.Linear(2, embed_dim)
+        self.freq_embedding = nn.Linear(2*num_joints, model_dim)
+
         self.joint_pos_embedding = nn.Parameter(torch.zeros(1, 3, model_dim))
         self.freq_pos_embedding = nn.Parameter(torch.zeros(1, num_coeff_keep, model_dim))
 
@@ -342,7 +342,7 @@ class FreqTempEncoder(nn.Module) :
         """
         B, T, J = x.shape[:-1]
         x = dct.dct(x.permute(0, 2, 3, 1))[..., :self.num_coeff_keep]
-        x = x.permute(0, 3, 1, 2).contiguous().view(B, self.num_coeff_keep, -1) # [B, k, J*32]
+        x = x.permute(0, 3, 1, 2).contiguous().view(B, self.num_coeff_keep, -1) # [B, k, J*2]
 
         return x
 
