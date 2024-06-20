@@ -312,7 +312,7 @@ class JointEncoder(nn.Module) :
 
 class FreqTempEncoder(nn.Module) :
     def __init__(self, num_joints, embed_dim, depth, num_heads=8, mlp_ratio=2., qkv_bias=True, qk_scale=None,
-                 drop_rate=0., attn_drop_rate=0., drop_path_rate=0.2,  norm_layer=None, num_coeff_keep=3) :
+                 drop_rate=0., attn_drop_rate=0., drop_path_rate=0.2,  norm_layer=None, num_coeff_keep=8) :
         super().__init__()
         self.num_coeff_keep = num_coeff_keep 
 
@@ -349,6 +349,9 @@ class FreqTempEncoder(nn.Module) :
         ######### Input #########
         freq_feat = self.LBF(full_2d_joint)     # [B, t, J, 2]
         joint_feat = short_2d_joint             # [B, 3, J, 2]
+
+        freq_feat = self.freq_embedding(freq_feat)
+        joint_feat = self.joint_embedding(joint_feat)
 
         freq_feat = freq_feat + self.freq_pos_embedding
         joint_feat = joint_feat + self.joint_pos_embedding
