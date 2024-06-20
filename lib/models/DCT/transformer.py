@@ -395,7 +395,7 @@ class STEncoder(nn.Module):
     def forward(self, f_temp, f_joint):
         """
         f_temp  : [B, T, D]
-        f_joint : [B, T, J, 2]
+        f_joint : [B, T, J, 32f]
         """
         B, T, J, _ = f_joint.shape
         f_joint = self.joint_embed(f_joint)         # [B, T, J, D]
