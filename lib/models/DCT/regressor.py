@@ -178,6 +178,7 @@ def perspective_projection(points, rotation, translation,
 class LocalRegressor(nn.Module):
     def __init__(self, dim, smpl_mean_params=SMPL_MEAN_PARAMS, hidden_dim=768, drop=0.5):
         super(LocalRegressor, self).__init__()
+        self.dim = dim
         self.fc1 = nn.Linear(dim + 6, hidden_dim)
         self.drop1 = nn.Dropout(drop)
         self.decpose = nn.Linear(hidden_dim, 6)
@@ -190,10 +191,11 @@ class LocalRegressor(nn.Module):
 
     def forward(self, x, init_pose, init_shape, init_cam, is_train=False, J_regressor=None):
         """
-        x  : [B, T, J, D]
+        x  : [B, T, J*D]
         init_pose, init_shape, init_cam : [B, T, /]
         """
         B, T = x.shape[:2]
+        x = x.reshape(B, T, -1, self.dim)
         pred_pose = init_pose.detach()
         pred_shape = init_shape.detach()
         pred_cam = init_cam.detach()
