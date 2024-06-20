@@ -331,11 +331,9 @@ class FreqTempEncoder(nn.Module) :
                 drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer)
         for i in range(depth)])
 
-        self.joint_head = nn.Sequential(
-            nn.LayerNorm(model_dim),
-            CrossAttention(model_dim, num_heads, qkv_bias, qk_scale, attn_drop_rate, drop_rate)
-        )
-        
+        self.joint_head = CrossAttention(model_dim, num_heads, qkv_bias, qk_scale, attn_drop_rate, drop_rate)
+        self.joint_norm = nn.LayerNorm(model_dim)
+
     def LBF(self, x) :
         """
         x : [B, T, J, 2]
@@ -363,5 +361,5 @@ class FreqTempEncoder(nn.Module) :
             joint_feat, freq_feat = blk(joint_feat, freq_feat)  # [B, 3, J*32], [B, t, J*32]
         
         joint_feat = self.joint_head(joint_feat, freq_feat)     # [B, 3, J*32]
-        #joint_feat = joint_feat.reshape(B, T, J, -1)
+        joint_feat = self.joint_norm(joint_feat)
         return joint_feat
