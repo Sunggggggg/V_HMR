@@ -362,7 +362,7 @@ class FreqTempEncoder(nn.Module) :
             joint_feat, freq_feat = blk(joint_feat, freq_feat)  # [B, 3, J*32], [B, t, J*32]
         
         joint_feat = self.joint_head(joint_feat, freq_feat)     # [B, 3, J*32]
-        joint_feat = self.joint_norm(joint_feat)
+        joint_feat = joint_feat.reshape(B, T, J, -1)
         return joint_feat
     
 class STEncoder(nn.Module):
