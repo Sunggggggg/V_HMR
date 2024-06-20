@@ -99,8 +99,6 @@ class Model(nn.Module) :
         f_img_short = f_img[:, self.mid_frame-1 : self.mid_frame+2]             # [B, 3, 2048]
         vitpose_2d_short = vitpose_2d[:, self.mid_frame-1 : self.mid_frame+2]   # [B, 3, 24, 2]
         f_st = self.st_trans(f_img_short, vitpose_2d_short)                     # [B, 3, 24, D]
-        vitpose_2d_short = vitpose_2d_short + self.pose_head(f_st)
-        f_st = self.pose_encoding(vitpose_2d_short)
 
         if is_train :
             f_st = f_st
