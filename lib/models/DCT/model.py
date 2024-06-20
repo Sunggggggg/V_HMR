@@ -41,8 +41,8 @@ class Model(nn.Module):
         self.local_trans_en = Transformer(depth=2, embed_dim=short_d_model, mlp_hidden_dim=short_d_model*4, 
                                           h=num_heads, length=3)
         
-        self.proj_input2 = nn.Linear(embed_dim//2 + num_joints*32, embed_dim)
-        self.local_regressor = LocalRegressor(embed_dim)
+        self.proj_input2 = nn.Linear(embed_dim//2 + num_joints*32, num_joints*16)
+        self.local_regressor = LocalRegressor(num_joints*16)
         
 
     def forward(self, f_text, f_img, vitpose_2d, is_train=False, J_regressor=None) :
@@ -70,15 +70,15 @@ class Model(nn.Module):
 
         # 
         full_2d_joint, short_2d_joint = vitpose_2d, vitpose_2d[:, self.mid_frame-1:self.mid_frame+2]
-        short_f_joint = self.joint_refiner(full_2d_joint, short_2d_joint)      # [B, 3, 24, D]
+        short_f_joint = self.joint_refiner(full_2d_joint, short_2d_joint)      # [B, 3, 24, 32]
         
         short_img = f_img[:, self.mid_frame-1:self.mid_frame+2]
         short_img = self.proj_short(short_img)
         short_img = self.local_trans_en(short_img)
         latent = self.proj_latent(latent)
-        short_f_temp = self.local_trans_de(short_img, latent)                   # [B, 3, d]
+        short_f_temp = self.local_trans_de(short_img, latent)                   # [B, 3, 256]
 
-        f_st = torch.cat([short_f_temp, short_f_joint], dim=-1)
+        f_st = torch.cat([short_f_temp, short_f_joint], dim=-1)                 # [B, 3, 256+24*32]
         f_st = self.proj_input2(f_st)         
         if is_train :
             f_st = f_st

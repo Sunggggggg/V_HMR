@@ -265,20 +265,20 @@ class FreqTempBlock(nn.Module):
 
     def forward(self, f_temp, f_freq):
         """
-        f_temp : [B, 3, J, dim]
-        f_freq : [B, t, J, dim]
+        f_temp : [B, 3, dim]
+        f_freq : [B, t, dim]
         """
-        B, t, J = f_freq.shape[:-1]
+        B, t = f_freq.shape[:2]
         f_temp = f_temp + self.drop_path(self.attn_t(self.norm_t(f_temp)))
         f_freq = f_freq + self.drop_path(self.attn_f(self.norm_f(f_freq)))
 
-        f_freq = dct.idct(f_freq.permute(0, 2, 3, 1)).permute(0, 3, 1, 2).contiguous()  # [B, t, J, dim]
+        f_freq = dct.idct(f_freq.permute(0, 2, 1)).permute(0, 2, 1).contiguous()    # [B, t, dim]
         f = torch.cat([f_temp, f_freq], dim=1)
         f = f + self.drop_path(self.attn(self.norm1(f)))
         f = f + self.drop_path(self.mlp(self.norm2(f)))        
 
         f_temp, f_freq = f[:, :3], f[:, 3:]
-        f_freq = dct.dct(f_freq.permute(0, 2, 3, 1)).permute(0, 3, 1, 2).contiguous().view(B, t, J, -1)
+        f_freq = dct.dct(f_freq.permute(0, 2, 1)).permute(0, 2, 1).contiguous().view(B, t, -1)
         return f_temp, f_freq
 
 class JointEncoder(nn.Module) :
@@ -347,6 +347,7 @@ class FreqTempEncoder(nn.Module) :
         return x
 
     def forward(self, full_2d_joint, short_2d_joint):
+        B, T, J = short_2d_joint.shape[:3]
         ######### Input #########
         freq_feat = self.LBF(full_2d_joint)     # [B, t, J, 2]
         joint_feat = short_2d_joint             # [B, 3, J, 2]
@@ -359,7 +360,8 @@ class FreqTempEncoder(nn.Module) :
         joint_feat = joint_feat + self.joint_pos_embedding  # [B, 3, J*32]
 
         for blk in self.blocks:
-            joint_feat, freq_feat = blk(joint_feat, freq_feat)
+            joint_feat, freq_feat = blk(joint_feat, freq_feat)  # [B, 3, J*32], [B, t, J*32]
         
-        joint_feat = self.joint_head(joint_feat, freq_feat) # [B, 3, J*32]
+        joint_feat = self.joint_head(joint_feat, freq_feat)     # [B, 3, J*32]
+        #joint_feat = joint_feat.reshape(B, T, J, -1)
         return joint_feat
