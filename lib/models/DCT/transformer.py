@@ -301,6 +301,51 @@ class FreqTempBlock(nn.Module):
 
         return f_temp
 
+class FreqMlp(nn.Module):
+    def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
+        super().__init__()
+        out_features = out_features or in_features
+        hidden_features = hidden_features or in_features
+        self.fc1 = nn.Linear(in_features, hidden_features)
+        self.act = act_layer()
+        self.fc2 = nn.Linear(hidden_features, out_features)
+        self.drop = nn.Dropout(drop)
+
+    def forward(self, x):
+        b, f, _ = x.shape
+        x = dct.dct(x.permute(0, 2, 1)).permute(0, 2, 1).contiguous()
+        x = self.fc1(x)
+        x = self.act(x)
+        x = self.drop(x)
+        x = self.fc2(x)
+        x = self.drop(x)
+        x = dct.idct(x.permute(0, 2, 1)).permute(0, 2, 1).contiguous()
+        return x
+
+class MixedBlock(nn.Module):
+    def __init__(self, dim, num_heads, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop=0., attn_drop=0.,
+                 drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm):
+        super().__init__()
+        self.norm1 = norm_layer(dim)
+        self.attn = Attention(
+            dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
+        # NOTE: drop path for stochastic depth, we shall see if this is better than dropout here
+        self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
+        self.norm2 = norm_layer(dim)
+        mlp_hidden_dim = int(dim * mlp_ratio)
+        self.mlp1 = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
+        self.norm3 = norm_layer(dim)
+        self.mlp2 = FreqMlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
+
+    def forward(self, x):
+        #B, T = f_temp.shape[:2]
+
+        #x = torch.cat([f_temp, f_freq], dim=1)  # [B, 3+k, dim]
+        x = x + self.drop_path(self.attn(self.norm1(x)))
+        x1 = x[:, :3] + self.drop_path(self.mlp1(self.norm2(x[:, :3])))
+        x2 = x[:, 3:] + self.drop_path(self.mlp2(self.norm3(x[:, 3:])))
+        return torch.cat((x1, x2), dim=1)
+
 class FreqTempEncoder(nn.Module) :
     def __init__(self, num_joints, embed_dim, depth, num_heads=8, mlp_ratio=2., qkv_bias=True, qk_scale=None,
                  drop_rate=0., attn_drop_rate=0., drop_path_rate=0.2,  norm_layer=None, num_coeff_keep=8) :

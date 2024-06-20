@@ -93,7 +93,7 @@ class GLoTLoss(nn.Module):
         w_smpl = data_3d['w_smpl'].type(torch.bool)
 
         # 
-        loss_kp_2d_global, loss_kp_3d_global, loss_accel_2d_global, loss_accel_3d_global, loss_pose_global, loss_shape_global, loss_vitpose_2d = self.cal_loss(sample_2d_count, \
+        loss_kp_2d_global, loss_kp_3d_global, loss_accel_2d_global, loss_accel_3d_global, loss_pose_global, loss_shape_global = self.cal_loss(sample_2d_count, \
             real_2d, real_3d, real_3d_theta, w_3d, w_smpl, reduce, flatten, generator_outputs_global, mask_ids)
 
         # 
@@ -102,8 +102,8 @@ class GLoTLoss(nn.Module):
         real_3d_theta = data_3d['theta'][:, seq_len // 2 - 1: seq_len // 2 + 2]
         w_3d = data_3d['w_3d'].type(torch.bool)[:, seq_len // 2 - 1: seq_len // 2 + 2]
         w_smpl = data_3d['w_smpl'].type(torch.bool)[:, seq_len // 2 - 1: seq_len // 2 + 2]
-        loss_kp_2d_local, loss_kp_3d_local, loss_accel_2d_local, loss_accel_3d_local, loss_pose_local, loss_shape_local, loss_vitpose_2d = self.cal_loss(sample_2d_count, \
-            real_2d, real_3d, real_3d_theta, w_3d, w_smpl, reduce, flatten, generator_outputs_local, vitpose_2d)
+        loss_kp_2d_local, loss_kp_3d_local, loss_accel_2d_local, loss_accel_3d_local, loss_pose_local, loss_shape_local = self.cal_loss(sample_2d_count, \
+            real_2d, real_3d, real_3d_theta, w_3d, w_smpl, reduce, flatten, generator_outputs_local)
 
         # 
         
@@ -117,7 +117,6 @@ class GLoTLoss(nn.Module):
             'loss_accel_3d_global': loss_accel_3d_global,
             'loss_accel_2d_local': loss_accel_2d_local,
             'loss_accel_3d_local': loss_accel_3d_local,
-            'loss_vitpose_2d' : loss_vitpose_2d
         }
 
         if loss_pose_global is not None:
@@ -130,7 +129,7 @@ class GLoTLoss(nn.Module):
 
         return gen_loss, loss_dict
 
-    def cal_loss(self, sample_2d_count, real_2d, real_3d, real_3d_theta, w_3d, w_smpl, reduce, flatten, generator_outputs, mask_ids=None, short_flag=False, vitpose_2d=None):
+    def cal_loss(self, sample_2d_count, real_2d, real_3d, real_3d_theta, w_3d, w_smpl, reduce, flatten, generator_outputs, mask_ids=None, short_flag=False):
         seq_len = real_2d.shape[1]
         if not short_flag:
             if self.use_accel:
@@ -176,11 +175,6 @@ class GLoTLoss(nn.Module):
         real_3d_theta = real_3d_theta[w_smpl]
         real_3d = real_3d[w_3d]
         # Generator Loss
-        if vitpose_2d is not None :
-            vitpose_2d = reduce(vitpose_2d)
-            loss_vitpose_2d = self.keypoint_loss(vitpose_2d, real_2d, openpose_weight=1., gt_weight=1., mask_2d_3d=None) * self.e_loss_weight
-        else :
-            loss_vitpose_2d = None
         loss_kp_2d = self.keypoint_loss(pred_j2d, real_2d, openpose_weight=1., gt_weight=1., mask_2d_3d=mask_2d_3d) * self.e_loss_weight
         loss_kp_3d = self.keypoint_3d_loss(pred_j3d, real_3d, mask_3d=mask_3d_kp)
         if not short_flag:
@@ -202,7 +196,7 @@ class GLoTLoss(nn.Module):
         else:
             loss_pose = None
             loss_shape = None
-        return loss_kp_2d, loss_kp_3d, loss_accel_2d, loss_accel_3d, loss_pose, loss_shape, loss_vitpose_2d
+        return loss_kp_2d, loss_kp_3d, loss_accel_2d, loss_accel_3d, loss_pose, loss_shape
 
 
     def get_accel_input(self, pose_2d, pose_3d, seq_len, reduce, conf_2d_flag=False):
