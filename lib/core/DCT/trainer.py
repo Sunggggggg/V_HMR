@@ -248,7 +248,7 @@ class Trainer():
                 input_pose = target['vitpose_j2d'].cuda()
                 input_text = target['text_emb'].cuda()
 
-                smpl_output, mask_ids, smpl_output_global, vitpose_2d_short = self.generator(input_text, input_feat, input_pose, is_train=False, J_regressor=J_regressor)
+                smpl_output, mask_ids, smpl_output_global = self.generator(input_text, input_feat, input_pose, is_train=False, J_regressor=J_regressor)
             
                 # convert to 14 keypoint format for evaluation
                 n_kp = smpl_output[-1]['kp_3d'].shape[-2]
