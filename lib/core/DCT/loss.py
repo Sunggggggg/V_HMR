@@ -196,7 +196,7 @@ class GLoTLoss(nn.Module):
         else:
             loss_pose = None
             loss_shape = None
-        return loss_kp_2d, loss_kp_3d, loss_accel_2d, loss_accel_3d, loss_pose, loss_shape, loss_vitpose_2d
+        return loss_kp_2d, loss_kp_3d, loss_accel_2d, loss_accel_3d, loss_pose, loss_shape
 
 
     def get_accel_input(self, pose_2d, pose_3d, seq_len, reduce, conf_2d_flag=False):
