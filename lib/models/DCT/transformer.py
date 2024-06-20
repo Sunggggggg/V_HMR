@@ -321,7 +321,7 @@ class FreqTempEncoder(nn.Module) :
         self.freq_embedding = nn.Linear(2, embed_dim)
 
         self.joint_pos_embedding = nn.Parameter(torch.zeros(1, 3, num_joints, embed_dim))
-        self.freq_pos_embedding = nn.Parameter(torch.zeros(1, 3, num_joints, embed_dim))
+        self.freq_pos_embedding = nn.Parameter(torch.zeros(1, num_coeff_keep, num_joints, embed_dim))
 
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  # stochastic depth decay rule
         self.blocks = nn.ModuleList([
