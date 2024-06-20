@@ -42,7 +42,7 @@ class Model(nn.Module):
                                           h=num_heads, length=3)
         
         self.proj_input2 = nn.Linear(embed_dim//2 + num_joints*32, num_joints*16)
-        self.local_regressor = LocalRegressor(num_joints*16)
+        self.local_regressor = LocalRegressor(16)
         
 
     def forward(self, f_text, f_img, vitpose_2d, is_train=False, J_regressor=None) :
