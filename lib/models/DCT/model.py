@@ -32,14 +32,6 @@ class Model(nn.Module):
 
         # Freqtemp transformer
         self.joint_refiner = FreqTempEncoder(num_joints, 32, 3, norm_layer=partial(nn.LayerNorm, eps=1e-6))
-
-        # Local encoder
-        short_d_model = embed_dim//2
-        self.proj_short = nn.Linear(2048, short_d_model)
-        self.proj_latent = nn.Linear(embed_dim, short_d_model)
-        self.local_trans_de = CrossAttention(short_d_model, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0., proj_drop=0.)
-        self.local_trans_en = Transformer(depth=2, embed_dim=short_d_model, mlp_hidden_dim=short_d_model*4, 
-                                          h=num_heads, length=3)
         
         # ST transformer
         self.st_trans = STEncoder(num_frames=3, num_joints=24, depth=depth, embed_dim=embed_dim//2, mlp_ratio=4.,
