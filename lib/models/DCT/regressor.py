@@ -252,8 +252,7 @@ class LocalRegressorThetaBeta(nn.Module):
     def __init__(self, dim, smpl_mean_params=SMPL_MEAN_PARAMS, hidden_dim=1024, drop=0.5):
         super(LocalRegressorThetaBeta, self).__init__()
         self.dim = dim
-        #self.fc1 = nn.Linear(dim + 144 + 10, hidden_dim)
-        self.fc1 = nn.Linear(dim + 144, hidden_dim)
+        self.fc1 = nn.Linear(dim + 144 + 10, hidden_dim)
         self.drop1 = nn.Dropout(drop)
         self.decpose = nn.Linear(hidden_dim, 144)
         self.decshape = nn.Linear(hidden_dim, 10)
@@ -276,17 +275,95 @@ class LocalRegressorThetaBeta(nn.Module):
         # Pose
         
         for _ in range(3):
-            #xc = torch.cat([x, pred_pose, pred_shape], dim=-1)   
-            xc = torch.cat([x, pred_pose], dim=-1)    
+            xc = torch.cat([x, pred_pose, pred_shape], dim=-1)     
             xc = self.fc1(xc)                               
             xc = self.drop1(xc)
             pred_pose = self.decpose(xc) + pred_pose        
-            #pred_shape = self.decshape(xc) + pred_shape    
+            pred_shape = self.decshape(xc) + pred_shape    
 
         pred_pose = pred_pose.reshape(-1, 144)
         pred_shape = pred_shape.reshape(-1, 10)
         pred_cam = pred_cam.reshape(-1, 3)
         batch_size = pred_pose.shape[0]
+        out_put = self.get_output(pred_pose, pred_shape, pred_cam, batch_size, is_train, J_regressor)
+        return out_put
+
+    def get_output(self, pred_pose, pred_shape, pred_cam, batch_size, is_train, J_regressor):
+        pred_rotmat = rot6d_to_rotmat(pred_pose).view(batch_size, 24, 3, 3)
+        pred_output = self.smpl(
+            betas=pred_shape,
+            body_pose=pred_rotmat[:, 1:],
+            global_orient=pred_rotmat[:, 0].unsqueeze(1),
+            pose2rot=False,
+        )
+
+        pred_vertices = pred_output.vertices
+        pred_joints = pred_output.joints
+
+        if not is_train and J_regressor is not None:
+            J_regressor_batch = J_regressor[None, :].expand(pred_vertices.shape[0], -1, -1).to(pred_vertices.device)
+            pred_joints = torch.matmul(J_regressor_batch, pred_vertices)
+            pred_joints = pred_joints[:, H36M_TO_J14, :]
+
+        pred_keypoints_2d = projection(pred_joints, pred_cam)
+
+        pose = rotation_matrix_to_angle_axis(pred_rotmat.reshape(-1, 3, 3)).reshape(-1, 72)
+
+        output = [{
+            'theta'  : torch.cat([pred_cam, pose, pred_shape], dim=1),
+            'verts'  : pred_vertices,
+            'kp_2d'  : pred_keypoints_2d,
+            'kp_3d'  : pred_joints,
+            'rotmat' : pred_rotmat
+        }]
+        return output
+    
+class NewLocalRegressor(nn.Module):
+    def __init__(self, dim, smpl_mean_params=SMPL_MEAN_PARAMS, hidden_dim=1024, drop=0.5):
+        super(NewLocalRegressor, self).__init__()
+        npose = 24 * 6
+        self.fc1 = nn.Linear(dim + 10, hidden_dim)
+        self.fc2 = nn.Linear(dim + npose, hidden_dim)
+        self.drop1 = nn.Dropout(drop)
+        self.drop2 = nn.Dropout(drop)
+
+        self.decshape = nn.Linear(hidden_dim, 10)
+        self.deccam = nn.Linear(hidden_dim * 2 + 3, 3)
+
+        self.smpl = SMPL(
+            SMPL_MODEL_DIR,
+            batch_size=64,
+            create_transl=False,
+        )
+
+        self.decpose = nn.Linear(hidden_dim, 144)
+
+
+    def forward(self, x, init_pose, init_shape, init_cam, is_train=False, J_regressor=None):
+        pred_pose = init_pose.detach()
+        pred_shape = init_shape.detach()
+        pred_cam = init_cam.detach()
+        
+        xc_shape_cam = torch.cat([x, pred_shape], -1)
+        xc_pose_cam = torch.cat([x, pred_pose], -1)
+
+        xc_shape_cam = self.fc1(xc_shape_cam)
+        xc_shape_cam = self.drop1(xc_shape_cam)
+       
+        for _ in range(3):
+            xc = torch.cat([x, pred_pose], dim=-1)     
+            xc = self.fc2(xc)                               
+            xc = self.drop2(xc)
+            pred_pose = self.decpose(xc) + pred_pose      
+
+        pred_shape = self.decshape(xc_shape_cam) + pred_shape  
+        pred_cam = self.deccam(torch.cat([xc_pose_cam, xc_shape_cam, pred_cam], -1)) + pred_cam
+
+        pred_pose = pred_pose.reshape(-1, 144)
+        pred_shape = pred_shape.reshape(-1, 10)
+        pred_cam = pred_cam.reshape(-1, 3)
+        batch_size = pred_pose.shape[0]
+
         out_put = self.get_output(pred_pose, pred_shape, pred_cam, batch_size, is_train, J_regressor)
         return out_put
 
