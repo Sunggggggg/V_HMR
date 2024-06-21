@@ -252,7 +252,8 @@ class LocalRegressorThetaBeta(nn.Module):
     def __init__(self, dim, smpl_mean_params=SMPL_MEAN_PARAMS, hidden_dim=1024, drop=0.5):
         super(LocalRegressorThetaBeta, self).__init__()
         self.dim = dim
-        self.fc1 = nn.Linear(dim + 144 + 10, hidden_dim)
+        #self.fc1 = nn.Linear(dim + 144 + 10, hidden_dim)
+        self.fc1 = nn.Linear(dim + 144, hidden_dim)
         self.drop1 = nn.Dropout(drop)
         self.decpose = nn.Linear(hidden_dim, 144)
         self.decshape = nn.Linear(hidden_dim, 10)
@@ -275,11 +276,12 @@ class LocalRegressorThetaBeta(nn.Module):
         # Pose
         
         for _ in range(3):
-            xc = torch.cat([x, pred_pose, pred_shape], dim=-1)     
+            #xc = torch.cat([x, pred_pose, pred_shape], dim=-1)   
+            xc = torch.cat([x, pred_pose], dim=-1)    
             xc = self.fc1(xc)                               
             xc = self.drop1(xc)
             pred_pose = self.decpose(xc) + pred_pose        
-            pred_shape = self.decshape(xc) + pred_shape    
+            #pred_shape = self.decshape(xc) + pred_shape    
 
         pred_pose = pred_pose.reshape(-1, 144)
         pred_shape = pred_shape.reshape(-1, 10)
