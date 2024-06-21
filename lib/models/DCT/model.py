@@ -36,7 +36,8 @@ class Model(nn.Module):
         # ST transformer
         self.st_trans = STEncoder(num_frames=3, num_joints=24, depth=depth, embed_dim=embed_dim//2, mlp_ratio=4.,
             num_heads=num_heads, drop_rate=drop_rate)
-        self.local_regressor = LocalRegressor(embed_dim//2)
+        #self.local_regressor = LocalRegressor(embed_dim//2)
+        self.local_regressor = GlobalRegressor(embed_dim//2)
         
 
     def forward(self, f_text, f_img, vitpose_2d, is_train=False, J_regressor=None) :
@@ -73,7 +74,7 @@ class Model(nn.Module):
         else :
             f_st = f_st[:, 1][:, None]
     
-        smpl_output = self.local_regressor(f_st, pred_global[0], pred_global[1], pred_global[2], is_train=is_train, J_regressor=J_regressor)
+        smpl_output, _ = self.local_regressor(f_st, pred_global[0], pred_global[1], pred_global[2], is_train=is_train, J_regressor=J_regressor)
 
         scores = None
         if not is_train:
