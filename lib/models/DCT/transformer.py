@@ -12,7 +12,7 @@ from einops import rearrange
 
 class Transformer(nn.Module):
     def __init__(self, depth=3, embed_dim=512, mlp_hidden_dim=1024, \
-            h=8, drop_rate=0.1, drop_path_rate=0.2, attn_drop_rate=0., length=27,
+            h=8, drop_rate=0.1, drop_path_rate=0.2, attn_drop_rate=0., length=16,
             ):
         super().__init__()
         qkv_bias = True
@@ -348,7 +348,7 @@ class MixedBlock(nn.Module):
 
 class FreqTempEncoder(nn.Module) :
     def __init__(self, num_joints, embed_dim, depth, num_heads=8, mlp_ratio=2., qkv_bias=True, qk_scale=None,
-                 drop_rate=0., attn_drop_rate=0., drop_path_rate=0.2,  norm_layer=None, num_coeff_keep=8) :
+                 drop_rate=0., attn_drop_rate=0., drop_path_rate=0.2,  norm_layer=None, num_coeff_keep=3) :
         super().__init__()
         self.num_coeff_keep = num_coeff_keep 
 
@@ -442,7 +442,7 @@ class STEncoder(nn.Module):
     def forward(self, f_temp, f_joint):
         """
         f_temp  : [B, T, D]
-        f_joint : [B, T, J, 32f]
+        f_joint : [B, T, J, 32]
         """
         B, T, J, _ = f_joint.shape
         f_joint = self.joint_embed(f_joint)         # [B, T, J, D]

@@ -336,6 +336,7 @@ if __name__ == "__main__":
                     img = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
                     new_height, new_width = img.shape[:2]
 
+                    cv2.putText(img, f'count: {str(count).zfill(4)}', (new_width - 150, 20), cv2.FONT_HERSHEY_PLAIN, 1.2, (0, 0, 0))
                     # plot attention weights
                     # cv2.putText(img, f'past: {str(scores[count-1][0].round(3))}', (new_width-110, 20), cv2.FONT_HERSHEY_PLAIN, 0.8, (255,255,255))
                     # cv2.putText(img, f'current: {str(scores[count-1][1].round(3))}', (new_width-110, 40), cv2.FONT_HERSHEY_PLAIN, 0.8, (255,255,255))
