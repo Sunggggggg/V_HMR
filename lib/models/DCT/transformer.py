@@ -361,10 +361,12 @@ class FreqTempEncoder(nn.Module) :
 
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  # stochastic depth decay rule
         self.blocks = nn.ModuleList([
-            FreqTempBlock(
+            MixedBlock(
                 dim=embed_dim*num_joints, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,
                 drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer)
         for i in range(depth)])
+
+        self.head = CrossAttention(embed_dim*num_joints)
         
     def LBF(self, x) :
         """
@@ -388,10 +390,13 @@ class FreqTempEncoder(nn.Module) :
         joint_feat = self.joint_embedding(joint_feat).reshape(B*T, J, -1)   # [B3, J, 32]
         joint_feat = joint_feat + self.joint_pos_embedding                  # [B3, J, 32]
         joint_feat = joint_feat.reshape(B, T, J, -1).view(B, T, -1)
+        f = torch.cat([joint_feat, freq_feat], dim=1)
 
         for blk in self.blocks:
-            joint_feat = blk(joint_feat, freq_feat)                         # [B, 3, J*32]
+            f = blk(f)                         # [B, 3, J*32]
         
+        joint_feat, freq_feat = f[:, :3], f[:, 3:]   # [B, 3, J*32], [B, k, J*32]
+        joint_feat = joint_feat + self.head(joint_feat, freq_feat)
         joint_feat = joint_feat.reshape(B, T, J, -1)
         return joint_feat
     
