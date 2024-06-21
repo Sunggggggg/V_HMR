@@ -67,7 +67,7 @@ class Model(nn.Module):
         full_2d_joint, short_2d_joint = vitpose_2d, vitpose_2d[:, self.mid_frame-1:self.mid_frame+2]
         short_f_joint = self.joint_refiner(full_2d_joint, short_2d_joint)      # [B, 3, 24*32]
         f_img_short = f_img[:, self.mid_frame-1:self.mid_frame+2]
-        f_st = self.st_trans(f_img_short, short_f_joint)   
+        f_st = self.st_trans(f_img_short, short_f_joint)                        # [B, 3, 24, 512]
     
         if is_train :
             f_st = f_st

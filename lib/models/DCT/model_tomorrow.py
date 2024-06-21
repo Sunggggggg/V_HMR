@@ -29,7 +29,7 @@ class Model(nn.Module):
         self.norm = nn.LayerNorm(embed_dim)
 
         # Global regre
-        self.global_regressor = GlobalRegressor(embed_dim)
+        self.global_regressor = GlobalRegressor(embed_dim//2)
 
         # Freqtemp transformer
         self.joint_refiner = FreqTempEncoder(num_joints, 32, 3, norm_layer=partial(nn.LayerNorm, eps=1e-6))
