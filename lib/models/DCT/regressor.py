@@ -345,16 +345,15 @@ class NewLocalRegressor(nn.Module):
         pred_cam = init_cam.detach()
         
         xc_shape_cam = torch.cat([x, pred_shape], -1)
-        xc_pose_cam = torch.cat([x, pred_pose], -1)
 
         xc_shape_cam = self.fc1(xc_shape_cam)
         xc_shape_cam = self.drop1(xc_shape_cam)
        
         for _ in range(3):
-            xc = torch.cat([x, pred_pose], dim=-1)     
-            xc = self.fc2(xc)                               
-            xc = self.drop2(xc)
-            pred_pose = self.decpose(xc) + pred_pose      
+            xc_pose_cam = torch.cat([x, pred_pose], dim=-1)     
+            xc_pose_cam = self.fc2(xc_pose_cam)                               
+            xc_pose_cam = self.drop2(xc_pose_cam)
+            pred_pose = self.decpose(xc_pose_cam) + pred_pose      
 
         pred_shape = self.decshape(xc_shape_cam) + pred_shape  
         pred_cam = self.deccam(torch.cat([xc_pose_cam, xc_shape_cam, pred_cam], -1)) + pred_cam
