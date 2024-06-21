@@ -40,7 +40,7 @@ class Model(nn.Module):
         self.global_regressor = GlobalRegressor(embed_dim//2)
 
         # Freqtemp transformer
-        self.joint_refiner = FreqTempEncoder(num_joints, 32, 3, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_coeff_keep=3)
+        self.joint_refiner = FreqTempEncoder(num_joints, 32, 3, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_coeff_keep=8)
         self.proj_short_joint = nn.Linear(num_joints*32, embed_dim//2)
         self.proj_short_img = nn.Linear(2048, embed_dim//2)
         self.temp_local_encoder = Transformer(depth=2, embed_dim=embed_dim//2, length=3)
