@@ -275,7 +275,7 @@ class LocalRegressorThetaBeta(nn.Module):
         # Pose
         
         for _ in range(3):
-            xc = torch.cat([x, pred_pose], dim=-1)     
+            xc = torch.cat([x, pred_pose, pred_shape], dim=-1)     
             xc = self.fc1(xc)                               
             xc = self.drop1(xc)
             pred_pose = self.decpose(xc) + pred_pose        
