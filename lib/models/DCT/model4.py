@@ -14,7 +14,7 @@ class Model(nn.Module):
     def __init__(self, 
                  num_coeff_kept=8,
                  num_frames=16,
-                 num_joints=24,
+                 num_joints=19,
                  embed_dim=512,
                  num_heads=8,
                  depth=4,
@@ -61,7 +61,7 @@ class Model(nn.Module):
 
         # Joint transformer
         vitpose_2d = self.jointtree.add_joint(vitpose_2d[..., :2])
-        vitpose_2d = self.jointtree.map_kp2joint(vitpose_2d)        # [B, T, 24, 2] 
+        #vitpose_2d = self.jointtree.map_kp2joint(vitpose_2d)        # [B, T, 24, 2] 
         f_joint = self.joint_encoder(vitpose_2d)                    # [B, T, 768(24*32)]
         f_joint = self.proj_input(f_joint)
         
