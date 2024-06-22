@@ -72,8 +72,7 @@ class JointTree():
         """
         pelvis = self.cal_pelvis(vitpose_2d)    # [B, T, 1, 2]
         neck = self.cal_neck(vitpose_2d)        # [B, T, 1, 2]
-        spin = self.cal_spin(vitpose_2d)        # [B, T, 1, 2]
-        total_joint = torch.cat([vitpose_2d, pelvis, neck, spin], dim=2)
+        total_joint = torch.cat([vitpose_2d, pelvis, neck], dim=2)
 
         return total_joint
     
