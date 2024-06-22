@@ -29,7 +29,7 @@ class Model(nn.Module):
         self.temp_encoder = Transformer(depth=3, embed_dim=embed_dim)
         
         # Spatio transformer
-        self.joint_encoder = JointEncoder()
+        self.joint_encoder = JointEncoder(num_joint=num_joints)
 
         # Global regre
         self.proj_input = nn.Linear(num_joints*32, embed_dim)
