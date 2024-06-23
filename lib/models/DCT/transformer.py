@@ -399,7 +399,61 @@ class FreqTempEncoder(nn.Module) :
         joint_feat = joint_feat + self.head(joint_feat, freq_feat)
         joint_feat = joint_feat.reshape(B, T, J, -1)
         return joint_feat
-    
+
+class FreqTempEncoder_img(nn.Module) :
+    def __init__(self, embed_dim, depth, num_heads=8, mlp_ratio=2., qkv_bias=True, qk_scale=None,
+                 drop_rate=0., attn_drop_rate=0., drop_path_rate=0.2,  norm_layer=None, num_coeff_keep=3) :
+        super().__init__()
+        self.num_coeff_keep = num_coeff_keep 
+
+        # spatial patch embedding
+        self.img_embedding = nn.Linear(2048, embed_dim)
+        self.freq_embedding = nn.Linear(2048, embed_dim)
+
+        self.img_pos_embedding = nn.Parameter(torch.zeros(1, 3, embed_dim))
+        self.freq_pos_embedding = nn.Parameter(torch.zeros(1, num_coeff_keep, embed_dim))
+
+        dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  # stochastic depth decay rule
+        self.blocks = nn.ModuleList([
+            MixedBlock(
+                dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, qkv_bias=qkv_bias, qk_scale=qk_scale,
+                drop=drop_rate, attn_drop=attn_drop_rate, drop_path=dpr[i], norm_layer=norm_layer)
+        for i in range(depth)])
+
+        self.head = CrossAttention(embed_dim)
+        
+    def LBF(self, x) :
+        """
+        x : [B, T, 2048]
+        """
+        B, T, J = x.shape[:-1]
+        x = dct.dct(x.permute(0, 2, 1))[..., :self.num_coeff_keep]
+        x = x.permute(0, 2, 1).contiguous().view(B, self.num_coeff_keep, -1) # [B, k, 2048]
+
+        return x
+
+    def forward(self, full_f_img, short_f_img):
+        """
+        full_f_img, short_f_img : [B, T, 2048], [B, 3, 2048]
+        """
+
+        freq_feat = self.LBF(full_f_img)        # [B, k, 2048]
+        img_feat = short_f_img                  # [B, 3, 2048]
+
+        freq_feat = self.freq_embedding(freq_feat)          # [B, k, 256]
+        freq_feat = freq_feat + self.freq_pos_embedding     # [B, k, 256]
+
+        img_feat = self.img_embedding(img_feat)             # [B, 3, 256]
+        img_feat = img_feat + self.img_pos_embedding        # [B, 3, 256]
+        f = torch.cat([img_feat, freq_feat], dim=1)         # [B, 3+k, 256]
+
+        for blk in self.blocks:
+            f = blk(f)                   
+        
+        img_feat, freq_feat = f[:, :3], f[:, 3:]                # [B, 3, 256], [B, k, 256]
+        img_feat = img_feat + self.head(img_feat, freq_feat)    # []
+        return img_feat
+
 class STEncoder(nn.Module):
     def __init__(self, 
                  num_frames=16,

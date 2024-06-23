@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from functools import partial 
 from .jointspace import JointTree
-from .transformer import TemporalEncoder, JointEncoder, FreqTempEncoder, CrossAttention, Transformer, STEncoder
+from .transformer import TemporalEncoder, JointEncoder, FreqTempEncoder, CrossAttention, Transformer, STEncoder, FreqTempEncoder_img
 from .regressor import LocalRegressorThetaBeta, GlobalRegressor, NewLocalRegressor
 
 """
@@ -43,8 +43,9 @@ class Model(nn.Module):
         self.joint_refiner = FreqTempEncoder(num_joints, 32, 3, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_coeff_keep=8)
         self.proj_short_joint = nn.Linear(num_joints*32, embed_dim//2)
         self.proj_short_img = nn.Linear(2048, embed_dim//2)
-        self.temp_local_encoder = Transformer(depth=2, embed_dim=embed_dim//2, length=3)
-        
+        #self.temp_local_encoder = Transformer(depth=2, embed_dim=embed_dim//2, length=3)
+        self.temp_local_encoder = FreqTempEncoder_img(embed_dim, 3, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_coeff_keep=8)
+
         self.local_decoder = CrossAttention(embed_dim//2)
         self.local_regressor = NewLocalRegressor(embed_dim//2)
         
@@ -60,8 +61,8 @@ class Model(nn.Module):
         f_temp = self.temp_encoder(f_temp)                          # [B, T, 512]
 
         # Joint transformer
-        vitpose_2d = self.jointtree.add_joint(vitpose_2d[..., :2])
-        #vitpose_2d = self.jointtree.map_kp2joint(vitpose_2d)        # [B, T, 24, 2] 
+        vitpose_2d = self.jointtree.add_joint(vitpose_2d[..., :2])  # [B, T, 19, 2] 
+        vitpose_2d = self.jointtree.map_kp2joint(vitpose_2d)        # [B, T, 24, 2] 
         f_joint = self.joint_encoder(vitpose_2d)                    # [B, T, 768(24*32)]
         f_joint = self.proj_input(f_joint)
         
@@ -82,7 +83,8 @@ class Model(nn.Module):
         
         f_img_short = f_img[:, self.mid_frame-1:self.mid_frame+2]
         f_img_short = self.proj_short_img(f_img_short)
-        f_img_short = self.temp_local_encoder(f_img_short)
+        f_img_short = self.temp_local_encoder(f_img, f_img_short)
+        # f_img_short = self.temp_local_encoder(f_img_short)          # [B, 3, 256]
 
         f_st = self.local_decoder(short_f_joint, f_img_short)
 
