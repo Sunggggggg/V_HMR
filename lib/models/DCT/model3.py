@@ -82,7 +82,7 @@ class Model(nn.Module):
         short_f_joint = self.proj_short_joint(short_f_joint)
         
         f_img_short = f_img[:, self.mid_frame-1:self.mid_frame+2]
-        f_img_short = self.proj_short_img(f_img_short)
+        #f_img_short = self.proj_short_img(f_img_short)
         f_img_short = self.temp_local_encoder(f_img, f_img_short)
         # f_img_short = self.temp_local_encoder(f_img_short)          # [B, 3, 256]
 
