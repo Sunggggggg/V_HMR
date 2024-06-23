@@ -426,7 +426,7 @@ class FreqTempEncoder_img(nn.Module) :
         """
         x : [B, T, 2048]
         """
-        B, T, J = x.shape[:-1]
+        B = x.shape[0]
         x = dct.dct(x.permute(0, 2, 1))[..., :self.num_coeff_keep]
         x = x.permute(0, 2, 1).contiguous().view(B, self.num_coeff_keep, -1) # [B, k, 2048]
 
