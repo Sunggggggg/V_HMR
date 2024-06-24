@@ -57,7 +57,7 @@ class JointTree():
         self.num_joint_init = num_joint_init
         self.num_joint_out = num_joint_init + 3 # pelvis, neck, spin
 
-        self.jointtoken = nn.Parameter(torch.rand(9, 19))
+        self.jointtoken = nn.Parameter(torch.rand(9, 19), requires_grad=True)
 
     def cal_pelvis(self, vitpose_2d):
         return vitpose_2d[:,:,[11,12],:2].mean(dim=2, keepdim=True)
@@ -106,7 +106,6 @@ class JointTree():
             else :
                 joint = vitpose_2d[:, :, joint_idx] # [B, T, 2]
 
-            print(joint.shape)
             joint_list.append(joint)
         joint_list = torch.stack(joint_list, dim=-2)
 
