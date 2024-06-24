@@ -389,13 +389,13 @@ class FreqTempEncoder(nn.Module) :
 
         joint_feat = self.joint_embedding(joint_feat).reshape(B*T, J, -1)   # [B3, J, 32]
         joint_feat = joint_feat + self.joint_pos_embedding                  # [B3, J, 32]
-        joint_feat = joint_feat.reshape(B, T, J, -1).view(B, T, -1)
-        f = torch.cat([joint_feat, freq_feat], dim=1)
+        joint_feat = joint_feat.reshape(B, T, J, -1).view(B, T, -1)         # [B, T, J*32]
+        f = torch.cat([joint_feat, freq_feat], dim=1)                       # [B, T+k, J*32]
 
         for blk in self.blocks:
-            f = blk(f, num_imgs)                         # [B, 3, J*32]
+            f = blk(f, num_imgs)                         # [B, T+k, J*32]
         
-        joint_feat, freq_feat = f[:, :3], f[:, 3:]   # [B, 3, J*32], [B, k, J*32]
+        joint_feat, freq_feat = f[:, :num_imgs], f[:, num_imgs:]   # [B, 3, J*32], [B, k, J*32]
         #joint_feat = joint_feat + self.head(joint_feat, freq_feat)
         joint_feat = self.head(joint_feat, freq_feat)
         joint_feat = joint_feat.reshape(B, T, J, -1)
