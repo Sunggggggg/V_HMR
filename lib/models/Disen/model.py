@@ -94,10 +94,10 @@ class Model(nn.Module):
         short_f_img = f_img[:, self.mid_frame-self.stride:self.mid_frame+self.stride+1] # [B, 6, 2048]
         short_f_img = self.proj_short_img(short_f_img)
         short_f_img = self.temp_local_encoder(short_f_img)                              # [B, 6, 256]
-        short_f_img = short_f_img[:, self.mid_frame-1:self.mid_frame+2]
+        short_f_img = short_f_img[:, self.stride-1:self.stride+2]
 
         short_f_cam = self.local_cam_decoder(short_f_img)                               # [B, 3, 64]
-        f_st = self.local_decoder(short_f_joint, short_f_img)                           # [B, 3, 256]
+        f_st = self.local_decoder(short_f_joint, short_f_img)   
 
         if is_train :
             f_local_output = torch.cat([short_f_cam, f_st], dim=-1)
