@@ -65,6 +65,7 @@ class Model(nn.Module):
         vitpose_2d = self.jointtree.add_joint(vitpose_2d[..., :2])      # [B, T, 19, 2] 
         #vitpose_2d = self.jointtree.map_kp2joint(vitpose_2d)           # [B, T, 24, 2] 
         f_joint = self.joint_encoder(vitpose_2d, vitpose_2d, 16)        # [B, T, 768(24*32)]
+        f_joint = f_joint.flatten(-2)
         f_joint = self.proj_input(f_joint)
         
         f = self.norm_input(f_joint + f_temp)   # [B, T, 512]
