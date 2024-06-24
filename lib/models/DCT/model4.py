@@ -4,6 +4,7 @@ from functools import partial
 from .jointspace import JointTree
 from .transformer import TemporalEncoder, JointEncoder, FreqTempEncoder, CrossAttention, Transformer, STEncoder, FreqTempEncoder_img
 from .regressor import LocalRegressorThetaBeta, GlobalRegressor, NewLocalRegressor, LocalRegressor
+from lib.models.GLoT.HSCR import HSCR
 
 """
 PoseformerV2 사용
@@ -49,7 +50,7 @@ class Model(nn.Module):
 
         self.local_decoder = CrossAttention(embed_dim//2)
         #self.local_regressor = NewLocalRegressor(embed_dim//2)
-        self.local_regressor = LocalRegressor(embed_dim//2)
+        self.local_regressor = HSCR()
         
 
     def forward(self, f_text, f_img, vitpose_2d, is_train=False, J_regressor=None) :
@@ -96,7 +97,7 @@ class Model(nn.Module):
         else :
             f_st = f_st[:, 1][:, None]
     
-        smpl_output = self.local_regressor(f_st, pred_global[0], pred_global[1], pred_global[2], n_iter=6, is_train=is_train, J_regressor=J_regressor)
+        smpl_output = self.local_regressor(f_st, pred_global[0], pred_global[1], pred_global[2], is_train=is_train, J_regressor=J_regressor)
 
         scores = None
         if not is_train:
