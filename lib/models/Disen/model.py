@@ -54,7 +54,7 @@ class Model(nn.Module):
             nn.LayerNorm(embed_dim//8)
         )
         self.local_decoder = CrossAttention(embed_dim//2)
-        self.local_regressor = NewLocalRegressor(embed_dim//2)
+        self.local_regressor = NewLocalRegressor(embed_dim//2+embed_dim//8)
 
 
     def forward(self, f_text, f_img, vitpose_2d, is_train=False, J_regressor=None) :
@@ -96,7 +96,7 @@ class Model(nn.Module):
         short_f_img = self.temp_local_encoder(short_f_img)                              # [B, 6, 256]
         short_f_img = short_f_img[:, self.mid_frame-1:self.mid_frame+2]
 
-        short_f_cam = self.local_cam_decoder(short_f_img)                                  # [B, 3, 64]
+        short_f_cam = self.local_cam_decoder(short_f_img)                               # [B, 3, 64]
         f_st = self.local_decoder(short_f_joint, short_f_img)                           # [B, 3, 256]
 
         if is_train :
