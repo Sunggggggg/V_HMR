@@ -3,7 +3,7 @@ import torch.nn as nn
 from functools import partial 
 from .jointspace import JointTree
 from .transformer import TemporalEncoder, JointEncoder, FreqTempEncoder, CrossAttention, Transformer, STEncoder, FreqTempEncoder_img
-from .regressor import LocalRegressorThetaBeta, GlobalRegressor, NewLocalRegressor
+from .regressor import LocalRegressorThetaBeta, GlobalRegressor, NewLocalRegressor, LocalRegressor
 
 """
 PoseformerV2 사용
@@ -49,7 +49,7 @@ class Model(nn.Module):
 
         self.local_decoder = CrossAttention(embed_dim//2)
         #self.local_regressor = NewLocalRegressor(embed_dim//2)
-        self.local_regressor = GlobalRegressor(embed_dim//2)
+        self.local_regressor = LocalRegressor(embed_dim//2)
         
 
     def forward(self, f_text, f_img, vitpose_2d, is_train=False, J_regressor=None) :
