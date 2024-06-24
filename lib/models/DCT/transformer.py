@@ -337,13 +337,13 @@ class MixedBlock(nn.Module):
         self.norm3 = norm_layer(dim)
         self.mlp2 = FreqMlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=act_layer, drop=drop)
 
-    def forward(self, x):
+    def forward(self, x, num_imgs=3):
         #B, T = f_temp.shape[:2]
 
         #x = torch.cat([f_temp, f_freq], dim=1)  # [B, 3+k, dim]
         x = x + self.drop_path(self.attn(self.norm1(x)))
-        x1 = x[:, :3] + self.drop_path(self.mlp1(self.norm2(x[:, :3])))
-        x2 = x[:, 3:] + self.drop_path(self.mlp2(self.norm3(x[:, 3:])))
+        x1 = x[:, :num_imgs] + self.drop_path(self.mlp1(self.norm2(x[:, :num_imgs])))
+        x2 = x[:, num_imgs:] + self.drop_path(self.mlp2(self.norm3(x[:, num_imgs:])))
         return torch.cat((x1, x2), dim=1)
 
 class FreqTempEncoder(nn.Module) :
@@ -378,7 +378,7 @@ class FreqTempEncoder(nn.Module) :
 
         return x
 
-    def forward(self, full_2d_joint, short_2d_joint):
+    def forward(self, full_2d_joint, short_2d_joint, num_imgs=3):
         B, T, J = short_2d_joint.shape[:3]
 
         freq_feat = self.LBF(full_2d_joint)     # [B, t, J*2]
@@ -393,10 +393,11 @@ class FreqTempEncoder(nn.Module) :
         f = torch.cat([joint_feat, freq_feat], dim=1)
 
         for blk in self.blocks:
-            f = blk(f)                         # [B, 3, J*32]
+            f = blk(f, num_imgs)                         # [B, 3, J*32]
         
         joint_feat, freq_feat = f[:, :3], f[:, 3:]   # [B, 3, J*32], [B, k, J*32]
-        joint_feat = joint_feat + self.head(joint_feat, freq_feat)
+        #joint_feat = joint_feat + self.head(joint_feat, freq_feat)
+        joint_feat = self.head(joint_feat, freq_feat)
         joint_feat = joint_feat.reshape(B, T, J, -1)
         return joint_feat
 
