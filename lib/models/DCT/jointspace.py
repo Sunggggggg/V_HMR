@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 
 joint2kp = [
     15, # 0
@@ -33,8 +34,8 @@ kp2joint = [
     15, # 7(Left Ankle)
     16, # 8(Right Ankle)
     19, ## 9(Spine9)
-    15, # 10(Left Toe)
-    16, # 11(Right Toe)
+    15, ## 10(Left Toe)
+    16, ## 11(Right Toe)
     18, # 12(Neck)
     5,  ## 13
     6,  ## 14
@@ -45,14 +46,20 @@ kp2joint = [
     8,  # 19
     9,  # 20
     10, # 21
-    9,  # 22
-    10  # 23
+    9,  ## 22
+    10  ## 23
 ]
+Learnable_joint = [3, 6, 9, 10, 11, 13, 14, 22, 23]
+
 
 class JointTree():
     def __init__(self, num_joint_init=17) :
         self.num_joint_init = num_joint_init
         self.num_joint_out = num_joint_init + 3 # pelvis, neck, spin
+
+        self.jointtoken = nn.ModuleList()
+        for i in range(len(Learnable_joint)):
+            self.jointtoken.append(nn.Linear(19*2, 2))
 
     def cal_pelvis(self, vitpose_2d):
         return vitpose_2d[:,:,[11,12],:2].mean(dim=2, keepdim=True)
@@ -88,3 +95,21 @@ class JointTree():
         """
         kp = torch.stack([vitpose_2d[:, :, i] for i in kp2joint], dim=2) # [B, T, 24, 2]
         return kp
+    
+    def mapping(self, vitpose_2d):
+        """
+        vitpose_2d : [B, T, 19, 2]
+        """
+        joint_list = []
+        for idx, joint_idx in enumerate(kp2joint) :
+            if idx in Learnable_joint :
+                joint = vitpose_2d * self.jointtoken[Learnable_joint.index(idx)].unsqueeze(-1)  # [B, T, 2]
+                joint = torch.sum(joint, dim=-2)
+            else :
+                joint = vitpose_2d[:, :, joint_idx] # [B, T, 2]
+
+            print(joint.shape)
+            joint_list.append(joint)
+        joint_list = torch.stack(joint_list, dim=-2)
+
+        return joint_list
