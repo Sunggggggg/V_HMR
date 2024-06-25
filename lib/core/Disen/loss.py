@@ -96,10 +96,12 @@ class LocalLoss(nn.Module):
             'loss_kp_2d_local': loss_kp_2d_local,
             'loss_kp_3d_local': loss_kp_3d_local,
             'loss_accel_2d_local': loss_accel_2d_local,
-            'loss_accel_3d_local': loss_accel_3d_local,
-            'loss_pose_local' : loss_pose_local,
-            'loss_shape_local' : loss_shape_local
+            'loss_accel_3d_local': loss_accel_3d_local
         }
+
+        if loss_pose_local is not None :
+            loss_dict['loss_pose_local'] = loss_pose_local
+            loss_dict['loss_shape_local'] = loss_shape_local
             
         gen_loss = torch.stack(list(loss_dict.values())).sum()
 
