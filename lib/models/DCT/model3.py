@@ -49,8 +49,7 @@ class Model(nn.Module):
         self.temp_local_encoder = Transformer(depth=2, embed_dim=embed_dim//2, length=self.stride*2+1)
 
         self.local_decoder = CrossAttention(embed_dim//2)
-        #self.local_regressor = NewLocalRegressor(embed_dim//2)
-        self.local_regressor = HSCR()
+        self.local_regressor = NewLocalRegressor(embed_dim//2)
         
 
     def forward(self, f_text, f_img, vitpose_2d, is_train=False, J_regressor=None) :
