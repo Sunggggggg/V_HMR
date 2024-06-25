@@ -59,7 +59,7 @@ class Model(nn.Module):
         torch.nn.init.normal_(self.cam_encoder.pos_embed, std=.02)
         torch.nn.init.normal_(self.cam_decoder.pos_embed, std=.02)
         torch.nn.init.normal_(self.pose_shape_encoder.pos_embed, std=.02)
-        torch.nn.init.normal_(self.joint_refiner.joint_embedding, std=.02)
+        torch.nn.init.normal_(self.joint_refiner.joint_pos_embedding, std=.02)
         torch.nn.init.normal_(self.joint_refiner.freq_pos_embedding, std=.02)
 
         self.apply(self._init_weights)
