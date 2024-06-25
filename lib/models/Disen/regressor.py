@@ -72,20 +72,11 @@ class GlobalRegressor(nn.Module):
             xc = torch.cat([x, pred_pose, pred_shape, pred_cam], 1)
             xc = self.fc1(xc)
             xc = self.drop1(xc)
-            # xc = self.fc2(xc)
-            # xc = self.drop2(xc)
+            xc = self.fc2(xc)
+            xc = self.drop2(xc)
             pred_pose = self.decpose(xc) + pred_pose
             pred_shape = self.decshape(xc) + pred_shape
             pred_cam = self.deccam(xc) + pred_cam
-
-        if is_train:
-            next_init_pose = pred_pose.reshape(-1, seq_len, 144)[:, seq_len // 2 - 1: seq_len // 2 + 2]
-            next_init_shape = pred_shape.reshape(-1, seq_len, 10)[:, seq_len // 2 - 1: seq_len // 2 + 2]
-            next_init_cam = pred_cam.reshape(-1, seq_len, 3)[:, seq_len // 2 - 1: seq_len // 2 + 2]
-        else:
-            next_init_pose = pred_pose.reshape(-1, seq_len, 144)[:, 0][:, None, :]
-            next_init_shape = pred_shape.reshape(-1, seq_len, 10)[:, 0][:, None, :]
-            next_init_cam = pred_cam.reshape(-1, seq_len, 3)[:, 0][:, None, :]
 
         pred_rotmat = rot6d_to_rotmat(pred_pose).view(batch_size, 24, 3, 3)
 
@@ -125,8 +116,7 @@ class GlobalRegressor(nn.Module):
             s['rotmat'] = s['rotmat'].reshape(B, T, -1, 3, 3)
             s['scores'] = scores
 
-        
-        return output, (next_init_pose, next_init_shape, next_init_cam)
+        return output
     
 def projection(pred_joints, pred_camera):
     pred_cam_t = torch.stack([pred_camera[:, 1],

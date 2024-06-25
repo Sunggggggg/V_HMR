@@ -14,12 +14,11 @@ from lib.core.Motion.config import parse_args
 from lib.utils.utils import prepare_output_dir
 from lib.dataset._loaders import get_data_loaders
 from lib.utils.utils import create_logger, get_optimizer
-#from lib.core.Motion.loss import Loss
-from lib.core.DCT.loss import GLoTLoss
-from lib.core.DCT.trainer import Trainer
 #from lib.models.Motion_baseline.model import Model
 #from lib.models.Trans.model import Model
-from lib.models.DCT.model3 import Model
+from lib.core.Disen.trainer import Trainer
+from lib.core.Disen.loss import LocalLoss
+from lib.models.Disen.model import Model
 
 from lr_scheduler import CosineAnnealingWarmupRestarts
 
@@ -49,7 +48,7 @@ def main(cfg):
     data_loaders = get_data_loaders(cfg)
 
     # ========= Compile Loss ========= #
-    loss = GLoTLoss(
+    loss = LocalLoss(
         e_loss_weight=cfg.LOSS.KP_2D_W,
         e_3d_loss_weight=cfg.LOSS.KP_3D_W,
         e_pose_loss_weight=cfg.LOSS.POSE_W,

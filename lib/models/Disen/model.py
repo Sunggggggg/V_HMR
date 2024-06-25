@@ -14,97 +14,83 @@ class Model(nn.Module):
                  num_heads=8,
                  depth=4,
                  drop_rate=0.,
+                 drop_path_rate=0.2,
+                 attn_drop_rate=0.0,
 
                  ):
         super().__init__()
+        self.stride = 4
         self.mid_frame = num_frames//2
+        ##########################
+        # Camera parameter 
+        ##########################
+        self.cam_proj = nn.Linear(2048, embed_dim//2)
+        self.cam_encoder = Transformer(depth=2, embed_dim=embed_dim//2, mlp_hidden_dim=embed_dim*2.0, h=num_heads, 
+                                       drop_rate=drop_rate, drop_path_rate=drop_path_rate, attn_drop_rate=attn_drop_rate, length=num_frames)
+        self.cam_dec_proj = nn.Linear(embed_dim//2, embed_dim//4)
+        self.cam_decoder = Transformer(depth=1, embed_dim=embed_dim//4, mlp_hidden_dim=embed_dim, h=num_heads, 
+                                       drop_rate=drop_rate, drop_path_rate=drop_path_rate, attn_drop_rate=attn_drop_rate, length=num_frames)
+        
+        ##########################
+        # 2D joint
+        ##########################
         self.jointtree = JointTree()
-        self.stride = 3
-        # 
-        self.proj_input = nn.Linear(2048, embed_dim)
-        self.global_encoder = Transformer(depth=2, embed_dim=embed_dim, mlp_hidden_dim=embed_dim*4., h=num_heads, length=num_frames)
-
-        # Camera Network
-        self.proj_cam = nn.Linear(embed_dim, embed_dim//4)
-        self.decoder_cam = Transformer(depth=1, embed_dim=embed_dim//4, mlp_hidden_dim=embed_dim, h=num_heads, length=num_frames)
-
-        # Pose, shape Network
-        self.proj_joint = nn.Linear(num_joints*32, embed_dim)
-        self.norm_input = nn.LayerNorm(embed_dim)
-        self.proj_dec = nn.Linear(embed_dim, embed_dim//2)
-
-        self.joint_encoder = JointEncoder(num_joint=num_joints)
-        self.decoder_pose_shape = Transformer(depth=1, embed_dim=embed_dim//2, mlp_hidden_dim=embed_dim*2., h=num_heads, length=num_frames)
-
-        # Global Regressor
-        self.global_regressor = GlobalRegressor(embed_dim//2 + embed_dim//4)
-
-        # Local Network
         self.joint_refiner = FreqTempEncoder(num_joints, 32, 3, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_coeff_keep=3)
         self.proj_short_joint = nn.Linear(num_joints*32, embed_dim//2)
-        self.proj_short_img = nn.Linear(2048, embed_dim//2)
 
-        self.temp_local_encoder = Transformer(depth=2, embed_dim=embed_dim//2, length=self.stride*2+1)
+        ##########################
+        # Pose, Shape parameters
+        ##########################
+        self.pose_shape_proj = nn.Linear(2048, embed_dim)
+        self.pose_shape_encoder = Transformer(depth=3, embed_dim=embed_dim, mlp_hidden_dim=embed_dim*4.0, h=num_heads, 
+                                       drop_rate=drop_rate, drop_path_rate=drop_path_rate, attn_drop_rate=attn_drop_rate, length=num_frames)
+        self.input_proj = nn.LayerNorm(embed_dim)
+        self.pose_shape_dec_proj = nn.Linear(embed_dim, embed_dim//2)
+        self.pose_shape_decoder = CrossAttention(embed_dim//2)
 
-        # Local Regressor
-        self.local_cam_decoder = nn.Sequential(
-            nn.Linear(embed_dim//2, embed_dim//8),
-            nn.ReLU(),
-            nn.Linear(embed_dim//8, embed_dim//8),
-            nn.LayerNorm(embed_dim//8)
-        )
-        self.local_decoder = CrossAttention(embed_dim//2)
-        self.local_regressor = NewLocalRegressor(embed_dim//2+embed_dim//8)
+        ##########################
+        # Regressor
+        ##########################
+        self.regressor = GlobalRegressor(embed_dim//2 + embed_dim//4)
 
 
-    def forward(self, f_text, f_img, vitpose_2d, is_train=False, J_regressor=None) :
+    def forward(self, f_img, vitpose_2d, is_train=False, J_regressor=None) :
         """
         f_img       : [B, T, 2048]
         f_joint     : [B, T, J, 2]
         """
         B = f_img.shape[0]
-        # Global encoder
-        f_temp = self.proj_input(f_img)             # [B, T, 512]
-        f_temp = self.global_encoder(f_temp)        # [B, T, 512]
+        ##########################
+        # Camera parameter 
+        ##########################
+        f_cam = self.cam_proj(f_img)        # [B, T, 256]
+        f_cam = self.cam_encoder(f_cam)     # [B, T, 256]
+        f_cam = self.cam_dec_proj(f_cam)    # [B, T, 128]
+        f_cam = self.cam_decoder(f_cam)     # [B, T, 128]
 
-        # Camera Network
-        f_cam = self.proj_cam(f_temp)
-        f_cam = self.decoder_cam(f_cam)         # [B, T, 128]
+        f_cam = f_cam[:, self.mid_frame-1:self.mid_frame+2] # [B, 3, 128]
 
-        # Pose, shape Network
-        vitpose_2d = self.jointtree.add_joint(vitpose_2d[..., :2])  # [B, T, 19, 2] 
-        f_joint = self.joint_encoder(vitpose_2d)                    # [B, T, (19*32)]
-        f_joint = self.proj_joint(f_joint)                          # [B, T, 512]
-
-        f = self.norm_input(f_joint + f_temp)   # [B, T, 512]
-        f = self.proj_dec(f)
-        f = self.decoder_pose_shape(f)          # [B, T, 256]
-
-        if is_train :
-            f_global_output = torch.cat([f_cam, f], dim=-1)
-        else :
-            f_global_output = torch.cat([f[:, self.mid_frame:self.mid_frame+1], f_cam[:, self.mid_frame:self.mid_frame+1]], dim=-1)
-        smpl_output_global, pred_global = self.global_regressor(f_global_output, n_iter=3, is_train=is_train, J_regressor=J_regressor)
-
-        # 
+        ##########################
+        # Pose, Shape parameters
+        ##########################
+        vitpose_2d = self.jointtree.add_joint(vitpose_2d[..., :2])
         full_2d_joint, short_2d_joint = vitpose_2d, vitpose_2d[:, self.mid_frame-1:self.mid_frame+2]
         short_f_joint = self.joint_refiner(full_2d_joint, short_2d_joint).flatten(-2)   # [B, 3, 19*32]
         short_f_joint = self.proj_short_joint(short_f_joint)                            # [B, 3, 256]
-        
-        short_f_img = f_img[:, self.mid_frame-self.stride:self.mid_frame+self.stride+1] # [B, 6, 2048]
-        short_f_img = self.proj_short_img(short_f_img)
-        short_f_img = self.temp_local_encoder(short_f_img)                              # [B, 6, 256]
-        short_f_img = short_f_img[:, self.stride-1:self.stride+2]
 
-        short_f_cam = self.local_cam_decoder(short_f_img)                               # [B, 3, 64]
-        f_st = self.local_decoder(short_f_joint, short_f_img)   
+        f_pose_shape = self.pose_shape_proj(f_img)
+        f_pose_shape = self.pose_shape_encoder(f_pose_shape)
+        f_pose_shape = self.pose_shape_dec_proj(f_pose_shape)                           # [B, T, 256]
+        f_pose_shape = f_pose_shape[:, self.mid_frame-1:self.mid_frame+2]               # [B, 3, 256]
+        
+        f_st = self.pose_shape_decoder(short_f_joint, f_pose_shape)                     # [B, 3, 256]
 
         if is_train :
-            f_local_output = torch.cat([short_f_cam, f_st], dim=-1)
+            f_local_output = torch.cat([f_cam, f_st], dim=-1)
         else :
-            f_local_output = torch.cat([short_f_cam[:, 1:2], f_st[:, 1:2]], dim=-1)
+            f_local_output = torch.cat([f_cam[:, 1:2], f_st[:, 1:2]], dim=-1)
     
-        smpl_output = self.local_regressor(f_local_output, pred_global[0], pred_global[1], pred_global[2], is_train=is_train, J_regressor=J_regressor)
+        smpl_output = self.regressor(f_local_output, is_train=is_train, J_regressor=J_regressor)
 
         scores = None
         if not is_train:
@@ -126,13 +112,4 @@ class Model(nn.Module):
                 s['rotmat'] = s['rotmat'].reshape(B, size, -1, 3, 3)
                 s['scores'] = scores
 
-        return smpl_output, None, smpl_output_global
-
-    
-        
-
-
-
-
-
-        
+        return smpl_output
