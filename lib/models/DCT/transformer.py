@@ -396,8 +396,8 @@ class FreqTempEncoder(nn.Module) :
             f = blk(f, num_imgs)                         # [B, T+k, J*32]
         
         joint_feat, freq_feat = f[:, :num_imgs], f[:, num_imgs:]   # [B, 3, J*32], [B, k, J*32]
-        #joint_feat = joint_feat + self.head(joint_feat, freq_feat)
-        joint_feat = init_joint_feat.reshape(B, T, -1) + self.head(joint_feat, freq_feat)
+        joint_feat = joint_feat + self.head(joint_feat, freq_feat)
+        #joint_feat = init_joint_feat.reshape(B, T, -1) + self.head(joint_feat, freq_feat)
         joint_feat = joint_feat.reshape(B, T, J, -1)
         return joint_feat
 

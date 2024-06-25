@@ -396,12 +396,12 @@ class FreqTempEncoder(nn.Module) :
             f = blk(f, num_imgs)                         # [B, T+k, J*32]
         
         joint_feat, freq_feat = f[:, :num_imgs], f[:, num_imgs:]   # [B, 3, J*32], [B, k, J*32]
-        #joint_feat = joint_feat + self.head(joint_feat, freq_feat)
-        joint_feat = init_joint_feat.reshape(B, T, -1) + self.head(joint_feat, freq_feat)
+        joint_feat = joint_feat + self.head(joint_feat, freq_feat)
+        #joint_feat = init_joint_feat.reshape(B, T, -1) + self.head(joint_feat, freq_feat)
         joint_feat = joint_feat.reshape(B, T, J, -1)
         return joint_feat
 
-class FreqTempEncoder_img(nn.Module) :
+class FreqTempEncoder_img(nn.Module) :#
     def __init__(self, embed_dim, depth, num_heads=8, mlp_ratio=2., qkv_bias=True, qk_scale=None,
                  drop_rate=0., attn_drop_rate=0., drop_path_rate=0.2,  norm_layer=None, num_coeff_keep=3) :
         super().__init__()
