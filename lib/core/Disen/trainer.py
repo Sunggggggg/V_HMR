@@ -165,7 +165,6 @@ class Trainer():
                 generator_outputs=smpl_output,
                 data_2d=target_2d,
                 data_3d=target_3d,
-                scores=None,
             )
 
             timer['loss'] = time.time() - start
