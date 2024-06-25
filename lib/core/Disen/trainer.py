@@ -190,7 +190,7 @@ class Trainer():
 
             summary_string = f'({i + 1}/{self.num_iters_per_epoch}) | Total: {bar.elapsed_td} | ' \
                              f'ETA: {bar.eta_td:} '\
-                             f'| loss: {losses.avg:.4f} |' \
+                             f'| loss: {losses.avg:.4f}' \
                              f'| 2d_local: {kp_2d_loss_local.avg:.4f} ' \
                              f'| 3d_local: {kp_3d_loss_local.avg:.4f} '\
                              f'| 2d_local_accel: {accel_loss_local_2d.avg:.4f} ' \
