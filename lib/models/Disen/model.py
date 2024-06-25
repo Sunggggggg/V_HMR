@@ -53,6 +53,24 @@ class Model(nn.Module):
         ##########################
         self.regressor = GlobalRegressor(embed_dim//2 + embed_dim//4)
 
+        self.initialize_weights()
+
+    def initialize_weights(self):
+        torch.nn.init.normal_(self.cam_encoder.pos_embed, std=.02)
+        torch.nn.init.normal_(self.cam_decoder.pos_embed, std=.02)
+        torch.nn.init.normal_(self.pose_shape_encoder.pos_embed, std=.02)
+        torch.nn.init.normal_(self.joint_refiner.joint_embedding, std=.02)
+        torch.nn.init.normal_(self.joint_refiner.freq_pos_embedding, std=.02)
+
+        self.apply(self._init_weights)
+    def _init_weights(self, m):
+        if isinstance(m, nn.Linear):
+            torch.nn.init.xavier_uniform_(m.weight)
+            if isinstance(m, nn.Linear) and m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+        elif isinstance(m, nn.LayerNorm):
+            nn.init.constant_(m.bias, 0)
+            nn.init.constant_(m.weight, 1.0)
 
     def forward(self, f_img, vitpose_2d, is_train=False, J_regressor=None) :
         """
