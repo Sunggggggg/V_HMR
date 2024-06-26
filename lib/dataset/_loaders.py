@@ -77,18 +77,18 @@ def get_data_loaders(cfg):
         return ConcatDataset(datasets)
 
     # ===== 2D keypoint datasets =====
-    # train_2d_dataset_names = cfg.TRAIN.DATASETS_2D
-    # train_2d_db = get_2d_datasets(train_2d_dataset_names)
+    train_2d_dataset_names = cfg.TRAIN.DATASETS_2D
+    train_2d_db = get_2d_datasets(train_2d_dataset_names)
 
-    # data_2d_batch_size = int(cfg.TRAIN.BATCH_SIZE * cfg.TRAIN.DATA_2D_RATIO)
-    # data_3d_batch_size = cfg.TRAIN.BATCH_SIZE - data_2d_batch_size
+    data_2d_batch_size = int(cfg.TRAIN.BATCH_SIZE * cfg.TRAIN.DATA_2D_RATIO)
+    data_3d_batch_size = cfg.TRAIN.BATCH_SIZE - data_2d_batch_size
 
-    # train_2d_loader = DataLoader(
-    #     dataset=train_2d_db,
-    #     batch_size=data_2d_batch_size,
-    #     shuffle=True,
-    #     num_workers=cfg.NUM_WORKERS,
-    # )
+    train_2d_loader = DataLoader(
+        dataset=train_2d_db,
+        batch_size=data_2d_batch_size,
+        shuffle=True,
+        num_workers=cfg.NUM_WORKERS,
+    )
 
     # ===== 3D keypoint datasets =====
     train_3d_dataset_names = cfg.TRAIN.DATASETS_3D
@@ -96,22 +96,11 @@ def get_data_loaders(cfg):
 
     train_3d_loader = DataLoader(
         dataset=train_3d_db,
-        batch_size=cfg.TRAIN.BATCH_SIZE,
+        batch_size=data_3d_batch_size,
         shuffle=True,
         num_workers=cfg.NUM_WORKERS,
         drop_last=True
     )
-
-    # exclude motion discriminator
-    # ===== Motion Discriminator dataset =====
-    # motion_disc_db = AMASS(seqlen=cfg.DATASET.SEQLEN)
-    #
-    # motion_disc_loader = DataLoader(
-    #     dataset=motion_disc_db,
-    #     batch_size=cfg.TRAIN.BATCH_SIZE,
-    #     shuffle=True,
-    #     num_workers=cfg.NUM_WORKERS,
-    # )
 
     # ===== Evaluation dataset =====
     overlap = ((cfg.DATASET.SEQLEN - 1)/float(cfg.DATASET.SEQLEN))
@@ -126,6 +115,6 @@ def get_data_loaders(cfg):
         num_workers=cfg.NUM_WORKERS,
     )
 
-    return None, train_3d_loader, valid_loader
+    return train_2d_loader, train_3d_loader, valid_loader
     # exclude motion discriminator
     # return train_2d_loader, train_3d_loader, motion_disc_loader, valid_loader
