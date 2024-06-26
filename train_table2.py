@@ -18,7 +18,7 @@ from lib.utils.utils import create_logger, get_optimizer
 #from lib.models.Trans.model import Model
 from lib.core.Disen.trainer import Trainer
 from lib.core.Disen.loss import GLoTLoss
-from lib.models.DCT.model import Model
+from lib.models.DCT.table2 import Model
 
 from lr_scheduler import CosineAnnealingWarmupRestarts
 

@@ -69,7 +69,7 @@ class Model(nn.Module):
 
         # Joint transformer
         vitpose_2d = self.jointtree.add_joint(vitpose_2d[..., :2])      # [B, T, 19, 2]
-        vitpose_2d = self.joint_encoder(vitpose_2d)
+        f_joint = self.joint_encoder(vitpose_2d)
         f_joint = self.proj_input(f_joint)
         
         f = self.norm_input(f_joint + f_temp)   # [B, T, 512]

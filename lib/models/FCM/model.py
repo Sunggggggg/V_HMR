@@ -27,7 +27,7 @@ class Model(nn.Module):
         
         # Spatio transformer
         self.joint_encoder = JointEncoder(num_joint=num_joints)
-        self.joint_encoder = FreqTempEncoder(num_joints, 32, 3, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_coeff_keep=3)
+        #self.joint_encoder = FreqTempEncoder(num_joints, 32, 3, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_coeff_keep=3)
 
         # Global regre
         self.proj_input = nn.Linear(num_joints*32, embed_dim)
@@ -69,7 +69,6 @@ class Model(nn.Module):
 
         # Joint transformer
         vitpose_2d = self.jointtree.add_joint(vitpose_2d[..., :2])      # [B, T, 19, 2] 
-        #f_joint = self.joint_encoder(vitpose_2d, vitpose_2d, 16)       # [B, T, 768(24*32)]
         f_joint = self.joint_encoder(vitpose_2d)                        # [B, T, 768(24*32)]
         f_joint = self.proj_input(f_joint)
         
