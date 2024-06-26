@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from functools import partial 
 from .jointspace import JointTree
-from .transformer import FreqTempEncoder, CrossAttention, Transformer
+from .transformer import FreqTempEncoder, CrossAttention, Transformer, JointEncoder
 from .regressor import GlobalRegressor, NewLocalRegressor
 from .FeatureCorrection import ImageFeatureCorrection
 
@@ -31,6 +31,7 @@ class Model(nn.Module):
         self.temp_encoder = Transformer(depth=3, embed_dim=embed_dim)
         
         # Spatio transformer
+        self.joint_encoder = JointEncoder(num_joint=num_joints)
         self.joint_encoder = FreqTempEncoder(num_joints, 32, 3, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_coeff_keep=3)
 
         # Global regre
@@ -62,7 +63,8 @@ class Model(nn.Module):
 
         # Joint transformer
         vitpose_2d = self.jointtree.add_joint(vitpose_2d[..., :2])      # [B, T, 19, 2] 
-        f_joint = self.joint_encoder(vitpose_2d, vitpose_2d, 16)        # [B, T, 768(24*32)]
+        #f_joint = self.joint_encoder(vitpose_2d, vitpose_2d, 16)       # [B, T, 768(24*32)]
+        f_joint = self.joint_encoder(vitpose_2d)                        # [B, T, 768(24*32)]
         f_joint = self.proj_input(f_joint)
         
         f = self.norm_input(f_joint + f_temp)   # [B, T, 512]
@@ -81,7 +83,7 @@ class Model(nn.Module):
         short_f_joint = self.proj_short_joint(short_f_joint)                            # [B, 3, 256]
         
         short_f_img = f_img[:, self.mid_frame-self.stride:self.mid_frame+self.stride+1] # [B, 8, 2048]
-        short_f_img = self.temp_local_encoder(short_f_img[:, self.stride-1:self.stride+2], short_f_img) # [B, 6, 256]
+        short_f_img = self.temp_local_encoder(short_f_img[:, self.stride-1:self.stride+2], short_f_img) # [B, 3, 256]
 
         f_st = self.local_decoder(short_f_joint, short_f_img)
 

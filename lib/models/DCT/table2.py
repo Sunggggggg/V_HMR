@@ -25,13 +25,13 @@ class Model(nn.Module):
         super().__init__()
         self.stride = 4
         self.mid_frame = num_frames//2
+        self.num_frames = num_frames
         self.jointtree = JointTree()
         # Temp transformer
         self.img_emb = nn.Linear(2048, embed_dim)
         self.temp_encoder = Transformer(depth=3, embed_dim=embed_dim)
         
         # Spatio transformer
-        #self.joint_encoder = JointEncoder(num_joint=num_joints)
         self.joint_encoder = FreqTempEncoder(num_joints, 32, 3, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_coeff_keep=3)
 
         # Global regre
@@ -52,7 +52,7 @@ class Model(nn.Module):
         self.local_regressor = NewLocalRegressor(embed_dim//2)
         
 
-    def forward(self, f_text, f_img, vitpose_2d, is_train=False, J_regressor=None) :
+    def forward(self, f_img, vitpose_2d, is_train=False, J_regressor=None) :
         """
         f_img       : [B, T, 2048]
         f_joint     : [B, T, J, 2]
@@ -63,10 +63,8 @@ class Model(nn.Module):
         f_temp = self.temp_encoder(f_temp)                          # [B, T, 512]
 
         # Joint transformer
-        vitpose_2d = self.jointtree.add_joint(vitpose_2d[..., :2])      # [B, T, 19, 2] 
-        #vitpose_2d = self.jointtree.map_kp2joint(vitpose_2d)           # [B, T, 24, 2] 
-        f_joint = self.joint_encoder(vitpose_2d, vitpose_2d, 16)        # [B, T, 768(24*32)]
-        f_joint = f_joint.flatten(-2)
+        vitpose_2d = self.jointtree.add_joint(vitpose_2d[..., :2])              # [B, T, 19, 2] 
+        f_joint = self.joint_encoder(vitpose_2d, vitpose_2d, self.num_frames)   # [B, T, 608]
         f_joint = self.proj_input(f_joint)
         
         f = self.norm_input(f_joint + f_temp)   # [B, T, 512]
@@ -81,7 +79,7 @@ class Model(nn.Module):
 
         # 
         full_2d_joint, short_2d_joint = vitpose_2d, vitpose_2d[:, self.mid_frame-1:self.mid_frame+2]
-        short_f_joint = self.joint_refiner(full_2d_joint, short_2d_joint).flatten(-2)       # [B, 3, 768]
+        short_f_joint = self.joint_refiner(full_2d_joint, short_2d_joint)               # [B, 3, 768]
         short_f_joint = self.proj_short_joint(short_f_joint)
         
         short_f_img = f_img[:, self.mid_frame-self.stride:self.mid_frame+self.stride+1] # [B, 6, 2048]
@@ -118,4 +116,4 @@ class Model(nn.Module):
                 s['rotmat'] = s['rotmat'].reshape(B, size, -1, 3, 3)
                 s['scores'] = scores
 
-        return smpl_output, None, smpl_output_global
+        return smpl_output, smpl_output_global
