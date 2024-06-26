@@ -50,8 +50,18 @@ class Model(nn.Module):
 
         self.local_decoder = CrossAttention(embed_dim//2)
         self.local_regressor = NewLocalRegressor(embed_dim//2)
+        self.apply(self._init_weights)
         
-
+    def _init_weights(self, m):
+        if isinstance(m, nn.Linear):
+            # we use xavier_uniform following official JAX ViT:
+            torch.nn.init.xavier_uniform_(m.weight)
+            if isinstance(m, nn.Linear) and m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+        elif isinstance(m, nn.LayerNorm):
+            nn.init.constant_(m.bias, 0)
+            nn.init.constant_(m.weight, 1.0)
+            
     def forward(self, f_img, vitpose_2d, is_train=False, J_regressor=None) :
         """
         f_img       : [B, T, 2048]

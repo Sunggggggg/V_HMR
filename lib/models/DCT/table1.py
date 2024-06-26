@@ -6,11 +6,6 @@ from .transformer import TemporalEncoder, JointEncoder, FreqTempEncoder, CrossAt
 from .regressor import LocalRegressorThetaBeta, GlobalRegressor, NewLocalRegressor, LocalRegressor
 from lib.models.GLoT.HSCR import HSCR
 
-"""
-PoseformerV2 사용
-GMM 사용 X
-"""
-
 class Model(nn.Module):
     def __init__(self, 
                  num_coeff_kept=8,
@@ -49,7 +44,18 @@ class Model(nn.Module):
 
         self.local_decoder = CrossAttention(embed_dim//2)
         self.local_regressor = NewLocalRegressor(embed_dim//2)
+
+        self.apply(self._init_weights)
         
+    def _init_weights(self, m):
+        if isinstance(m, nn.Linear):
+            # we use xavier_uniform following official JAX ViT:
+            torch.nn.init.xavier_uniform_(m.weight)
+            if isinstance(m, nn.Linear) and m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+        elif isinstance(m, nn.LayerNorm):
+            nn.init.constant_(m.bias, 0)
+            nn.init.constant_(m.weight, 1.0)
 
     def forward(self, f_img, vitpose_2d, is_train=False, J_regressor=None) :
         """
@@ -115,4 +121,4 @@ class Model(nn.Module):
                 s['rotmat'] = s['rotmat'].reshape(B, size, -1, 3, 3)
                 s['scores'] = scores
 
-        return smpl_output, None, smpl_output_global
+        return smpl_output, smpl_output_global
