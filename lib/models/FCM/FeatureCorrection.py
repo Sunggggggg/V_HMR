@@ -49,7 +49,7 @@ class ImageFeatureCorrection(nn.Module):
         short_f_img : [B, 3, 2048]
         mask_f_img  : [B, k, 2048]
         """
-        f_img = self.local_embedding(short_f_img) + self.seq_embedding
+        f_img = self.local_embedding(short_f_img) + self.local_pos_embedding
         f_seq = self.seq_embedding(mask_f_img) + self.seq_pos_embedding
 
         f = torch.cat([f_img, f_seq], dim=1)                        # [B, 3+k, dim]
