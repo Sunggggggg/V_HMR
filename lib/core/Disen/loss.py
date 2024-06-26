@@ -29,7 +29,7 @@ def perm_index_reverse(indices):
     return indices_reverse
 
 
-class LocalLoss(nn.Module):
+class GLoTLoss(nn.Module):
     def __init__(
             self,
             e_loss_weight=60.,
@@ -42,7 +42,7 @@ class LocalLoss(nn.Module):
             use_accel=True,
             device='cuda',
     ):
-        super(LocalLoss, self).__init__()
+        super(GLoTLoss, self).__init__()
         self.e_loss_weight = e_loss_weight
         self.e_3d_loss_weight = e_3d_loss_weight
         self.e_pose_loss_weight = e_pose_loss_weight
@@ -64,9 +64,10 @@ class LocalLoss(nn.Module):
 
     def forward(
             self,
-            generator_outputs,
+            generator_outputs_global,
+            generator_outputs_local,
             data_2d,
-            data_3d,
+            data_3d
     ):
         reduce = lambda x: x.contiguous().view((x.shape[0] * x.shape[1],) + x.shape[2:])    # [B, 3, 24, 2] => [B3, 24, 2]
         flatten = lambda x: x.reshape(-1)
@@ -83,24 +84,33 @@ class LocalLoss(nn.Module):
         w_smpl = data_3d['w_smpl'].type(torch.bool)
 
         # 
+        loss_kp_2d_global, loss_kp_3d_global, loss_accel_2d_global, loss_accel_3d_global, loss_pose_global, loss_shape_global = self.cal_loss(sample_2d_count, \
+            real_2d, real_3d, real_3d_theta, w_3d, w_smpl, reduce, flatten, generator_outputs_global)
+
+        # 
         real_2d = real_2d[:, seq_len // 2 - 1: seq_len // 2 + 2]
         real_3d = data_3d['kp_3d'][:, seq_len // 2 - 1: seq_len // 2 + 2]
         real_3d_theta = data_3d['theta'][:, seq_len // 2 - 1: seq_len // 2 + 2]
         w_3d = data_3d['w_3d'].type(torch.bool)[:, seq_len // 2 - 1: seq_len // 2 + 2]
         w_smpl = data_3d['w_smpl'].type(torch.bool)[:, seq_len // 2 - 1: seq_len // 2 + 2]
         loss_kp_2d_local, loss_kp_3d_local, loss_accel_2d_local, loss_accel_3d_local, loss_pose_local, loss_shape_local = self.cal_loss(sample_2d_count, \
-            real_2d, real_3d, real_3d_theta, w_3d, w_smpl, reduce, flatten, generator_outputs)
+            real_2d, real_3d, real_3d_theta, w_3d, w_smpl, reduce, flatten, generator_outputs_local)
 
-        # 
         loss_dict = {
+            'loss_kp_2d_global': loss_kp_2d_global,
+            'loss_kp_3d_global': loss_kp_3d_global,
             'loss_kp_2d_local': loss_kp_2d_local,
             'loss_kp_3d_local': loss_kp_3d_local,
+            'loss_accel_2d_global': loss_accel_2d_global, 
+            'loss_accel_3d_global': loss_accel_3d_global,
             'loss_accel_2d_local': loss_accel_2d_local,
-            'loss_accel_3d_local': loss_accel_3d_local
+            'loss_accel_3d_local': loss_accel_3d_local,
         }
 
-        if loss_pose_local is not None :
+        if loss_pose_global is not None:
+            loss_dict['loss_pose_global'] = loss_pose_global
             loss_dict['loss_pose_local'] = loss_pose_local
+            loss_dict['loss_shape_global'] = loss_shape_global
             loss_dict['loss_shape_local'] = loss_shape_local
             
         gen_loss = torch.stack(list(loss_dict.values())).sum()
