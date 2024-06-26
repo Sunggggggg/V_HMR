@@ -76,6 +76,16 @@ cfg.DATASET = CN()
 cfg.DATASET.SEQLEN = 16
 cfg.DATASET.OVERLAP = 0.5
 
+cfg.LOSS = CN()
+cfg.LOSS.KP_2D_W = 60.
+cfg.LOSS.KP_3D_W = 30.
+cfg.LOSS.SHAPE_W = 0.001
+cfg.LOSS.POSE_W = 1.0
+cfg.LOSS.D_MOTION_LOSS_W = 1.
+cfg.LOSS.vel_or_accel_2d_weight = 50.
+cfg.LOSS.vel_or_accel_3d_weight = 100.
+cfg.LOSS.use_accel = True
+
             
 def get_cfg_defaults():
     """Get a yacs CfgNode object with default values for my_project."""
