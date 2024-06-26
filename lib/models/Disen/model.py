@@ -28,7 +28,7 @@ class Model(nn.Module):
                                    h=num_heads, drop_rate=drop_rate, drop_path_rate=drop_path_rate, attn_drop_rate=attn_drop_rate, length=num_frames)
         
         self.local_network = DTM(depth=2, embed_dim=embed_dim//2, mlp_hidden_dim=embed_dim*2.0,
-                                   h=num_heads, drop_rate=drop_rate, drop_path_rate=drop_path_rate, attn_drop_rate=attn_drop_rate, length=num_frames,
+                                   h=num_heads, drop_rate=drop_rate, drop_path_rate=drop_path_rate, attn_drop_rate=attn_drop_rate, length=self.stride*2+1,
                                    decoder=False)
         
         ##########################
@@ -48,15 +48,8 @@ class Model(nn.Module):
         self.global_regressor = GlobalRegressor(embed_dim//2 + embed_dim//4)
         self.local_regressor = NewLocalRegressor(embed_dim//2 + embed_dim//4)
 
-        self.initialize_weights()
-
-    def initialize_weights(self):
-        torch.nn.init.normal_(self.joint_encoder.joint_pos_embedding, std=.02)
-        torch.nn.init.normal_(self.joint_encoder.freq_pos_embedding, std=.02)
-        torch.nn.init.normal_(self.joint_refiner.joint_pos_embedding, std=.02)
-        torch.nn.init.normal_(self.joint_refiner.freq_pos_embedding, std=.02)
-
         self.apply(self._init_weights)
+
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
             torch.nn.init.xavier_uniform_(m.weight)
