@@ -2,18 +2,20 @@ import torch
 import torch.nn as nn
 from functools import partial 
 from .jointspace import JointTree
-from .transformer import TemporalEncoder, JointEncoder, FreqTempEncoder, CrossAttention, Transformer, STEncoder, FreqTempEncoder_img
-from .regressor import LocalRegressorThetaBeta, GlobalRegressor, NewLocalRegressor
+from .transformer import FreqTempEncoder, CrossAttention, Transformer
+from .regressor import GlobalRegressor, NewLocalRegressor
+from .FeatureCorrection import ImageFeatureCorrection
 
 """
-Feature Correction Model
+PoseformerV2 사용
+GMM 사용 X
 """
 
 class Model(nn.Module):
     def __init__(self, 
                  num_coeff_kept=8,
                  num_frames=16,
-                 num_joints=24,
+                 num_joints=19,
                  embed_dim=512,
                  num_heads=8,
                  depth=4,
@@ -21,6 +23,7 @@ class Model(nn.Module):
 
                  ):
         super().__init__()
+        self.stride = 4
         self.mid_frame = num_frames//2
         self.jointtree = JointTree()
         # Temp transformer
@@ -28,7 +31,8 @@ class Model(nn.Module):
         self.temp_encoder = Transformer(depth=3, embed_dim=embed_dim)
         
         # Spatio transformer
-        self.joint_encoder = JointEncoder(num_joint=num_joints)
+        #self.joint_encoder = JointEncoder(num_joint=num_joints)
+        self.joint_encoder = FreqTempEncoder(num_joints, 32, 3, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_coeff_keep=3)
 
         # Global regre
         self.proj_input = nn.Linear(num_joints*32, embed_dim)
@@ -42,8 +46,7 @@ class Model(nn.Module):
         self.joint_refiner = FreqTempEncoder(num_joints, 32, 3, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_coeff_keep=3)
         self.proj_short_joint = nn.Linear(num_joints*32, embed_dim//2)
         self.proj_short_img = nn.Linear(2048, embed_dim//2)
-        self.temp_local_encoder = Transformer(depth=2, embed_dim=embed_dim//2, length=3)
-        #self.temp_local_encoder = FreqTempEncoder_img(embed_dim//2, 3, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_coeff_keep=3)
+        self.temp_local_encoder = ImageFeatureCorrection(embed_dim//2)
 
         self.local_decoder = CrossAttention(embed_dim//2)
         self.local_regressor = NewLocalRegressor(embed_dim//2)
@@ -60,9 +63,8 @@ class Model(nn.Module):
         f_temp = self.temp_encoder(f_temp)                          # [B, T, 512]
 
         # Joint transformer
-        vitpose_2d = self.jointtree.add_joint(vitpose_2d[..., :2])  # [B, T, 19, 2] 
-        vitpose_2d = self.jointtree.mapping(vitpose_2d)             # [B, T, 24, 2] 
-        f_joint = self.joint_encoder(vitpose_2d)                    # [B, T, 768(24*32)]
+        vitpose_2d = self.jointtree.add_joint(vitpose_2d[..., :2])      # [B, T, 19, 2] 
+        f_joint = self.joint_encoder(vitpose_2d, vitpose_2d, 16)        # [B, T, 768(24*32)]
         f_joint = self.proj_input(f_joint)
         
         f = self.norm_input(f_joint + f_temp)   # [B, T, 512]
@@ -77,15 +79,14 @@ class Model(nn.Module):
 
         # 
         full_2d_joint, short_2d_joint = vitpose_2d, vitpose_2d[:, self.mid_frame-1:self.mid_frame+2]
-        short_f_joint = self.joint_refiner(full_2d_joint, short_2d_joint).flatten(-2)       # [B, 3, 768]
-        short_f_joint = self.proj_short_joint(short_f_joint)
+        short_f_joint = self.joint_refiner(full_2d_joint, short_2d_joint)               # [B, 3, 768]
+        short_f_joint = self.proj_short_joint(short_f_joint)                            # [B, 3, 256]
         
-        f_img_short = f_img[:, self.mid_frame-1:self.mid_frame+2]
-        f_img_short = self.proj_short_img(f_img_short)
-        #f_img_short = self.temp_local_encoder(f_img, f_img_short)
-        f_img_short = self.temp_local_encoder(f_img_short)          # [B, 3, 256]
+        short_f_img = f_img[:, self.mid_frame-self.stride:self.mid_frame+self.stride+1] # [B, 8, 2048]
+        short_f_img = self.proj_short_img(short_f_img)
+        short_f_img = self.temp_local_encoder(short_f_img, short_f_img[:, self.stride-1:self.stride+2]) # [B, 6, 256]
 
-        f_st = self.local_decoder(short_f_joint, f_img_short)
+        f_st = self.local_decoder(short_f_joint, short_f_img)
 
         if is_train :
             f_st = f_st
