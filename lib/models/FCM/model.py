@@ -46,13 +46,13 @@ class Model(nn.Module):
         self.joint_refiner = FreqTempEncoder(num_joints, 32, 3, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_coeff_keep=3)
         self.proj_short_joint = nn.Linear(num_joints*32, embed_dim//2)
         self.proj_short_img = nn.Linear(2048, embed_dim//2)
-        self.temp_local_encoder = ImageFeatureCorrection(embed_dim//2)
+        self.temp_local_encoder = ImageFeatureCorrection(embed_dim//2, num_frames=3, num_frames_keep=self.stride*2+1)
 
         self.local_decoder = CrossAttention(embed_dim//2)
         self.local_regressor = NewLocalRegressor(embed_dim//2)
         
 
-    def forward(self, f_text, f_img, vitpose_2d, is_train=False, J_regressor=None) :
+    def forward(self, f_img, vitpose_2d, is_train=False, J_regressor=None) :
         """
         f_img       : [B, T, 2048]
         f_joint     : [B, T, J, 2]

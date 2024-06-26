@@ -25,7 +25,7 @@ class MixedBlock(nn.Module):
         return torch.cat((x1, x2), dim=1)
 
 class ImageFeatureCorrection(nn.Module):
-    def __init__(self, embed_dim, depth, num_heads=8, mlp_ratio=2., qkv_bias=True, qk_scale=None,
+    def __init__(self, embed_dim, depth=3, num_heads=8, mlp_ratio=2., qkv_bias=True, qk_scale=None,
                  drop_rate=0., attn_drop_rate=0., drop_path_rate=0.2,  norm_layer=None, num_frames=3, num_frames_keep=8) :
         super().__init__()
 
