@@ -31,7 +31,6 @@ class Model(nn.Module):
         self.temp_encoder = Transformer(depth=3, embed_dim=embed_dim)
         
         # Spatio transformer
-        #self.joint_encoder = JointEncoder(num_joint=num_joints)
         self.joint_encoder = FreqTempEncoder(num_joints, 32, 3, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_coeff_keep=3)
 
         # Global regre
@@ -45,7 +44,6 @@ class Model(nn.Module):
         # Freqtemp transformer
         self.joint_refiner = FreqTempEncoder(num_joints, 32, 3, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_coeff_keep=3)
         self.proj_short_joint = nn.Linear(num_joints*32, embed_dim//2)
-        self.proj_short_img = nn.Linear(2048, embed_dim//2)
         self.temp_local_encoder = ImageFeatureCorrection(embed_dim//2, num_frames=3, num_frames_keep=self.stride*2+1)
 
         self.local_decoder = CrossAttention(embed_dim//2)
@@ -83,7 +81,6 @@ class Model(nn.Module):
         short_f_joint = self.proj_short_joint(short_f_joint)                            # [B, 3, 256]
         
         short_f_img = f_img[:, self.mid_frame-self.stride:self.mid_frame+self.stride+1] # [B, 8, 2048]
-        short_f_img = self.proj_short_img(short_f_img)
         short_f_img = self.temp_local_encoder(short_f_img, short_f_img[:, self.stride-1:self.stride+2]) # [B, 6, 256]
 
         f_st = self.local_decoder(short_f_joint, short_f_img)
