@@ -63,17 +63,14 @@ class KTD(nn.Module):
     def __init__(self, embed_dim=128, hidden_dim=1024):
         super(KTD, self).__init__()
         npose_per_joint = 6
-        nshape = 10
-        ncam = 3
+
         self.joint_regs = nn.ModuleList()
         for joint_idx, ancestor_idx in zip(Joint3D_INDEX, ANCESTOR_INDEX):
             regressor = nn.Linear(hidden_dim + embed_dim * len(joint_idx) + npose_per_joint * len(ancestor_idx) + 6,
                                   npose_per_joint)
             nn.init.xavier_uniform_(regressor.weight, gain=0.01)
             self.joint_regs.append(regressor)
-        self.decshape = nn.Linear(hidden_dim, nshape)
-        self.deccam = nn.Linear(hidden_dim, ncam)
-
+            
     def forward(self, x, embed_3djoint, global_pose):
         pose = []
         cnt = 0
@@ -116,14 +113,10 @@ class HSCR(nn.Module):
         self.local_reg = KTD(embed_dim, hidden_dim)
 
     def forward(self, x, embed_3djoint, is_train=False, J_regressor=None):
-        batch_size = x.shape[0]
-        T = x.shape[1]
-        if init_pose is None:
-            init_pose = self.init_pose.expand(batch_size, T, -1)
-        if init_shape is None:
-            init_shape = self.init_shape.expand(batch_size, T, -1)
-        if init_cam is None:
-            init_cam = self.init_cam.expand(batch_size, T, -1)
+        batch_size, T = x.shape[:2]
+        init_pose = self.init_pose.expand(batch_size, T, -1)
+        init_shape = self.init_shape.expand(batch_size, T, -1)
+        init_cam = self.init_cam.expand(batch_size, T, -1)
         # print("init",init_pose.shape)
         pred_pose = init_pose.detach()
         pred_shape = init_shape.detach()

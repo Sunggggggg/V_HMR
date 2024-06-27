@@ -28,6 +28,7 @@ class Model(nn.Module):
         self.temp_encoder = ImageFeatureCorrection(embed_dim)
 
         # Regressor
+        self.pos_emb = nn.Linear(3, 128)
         self.regressor = HSCR(f_dim=embed_dim)
         
         self.apply(self._init_weights)
@@ -57,6 +58,7 @@ class Model(nn.Module):
                                    , f_img[:, self.mid_frame-1:self.mid_frame+2])           # [B, 1, dim]
 
         # [B, 1, *]
+        pose3d = self.pos_emb(pose3d)
         smpl_output = self.regressor(f_temp, pose3d, is_train=is_train, J_regressor=J_regressor)
     
         scores = None
