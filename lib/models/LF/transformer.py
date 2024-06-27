@@ -190,11 +190,11 @@ class FreqTempEncoder(nn.Module) :
 
         ####### A easy way to implement weighted mean
         self.weighted_mean = torch.nn.Conv1d(in_channels=num_coeff_keep, out_channels=1, kernel_size=1)
-        self.weighted_mean_ = torch.nn.Conv1d(in_channels=16, out_channels=1, kernel_size=1)
+        self.weighted_mean_ = torch.nn.Conv1d(in_channels=3, out_channels=1, kernel_size=1)
 
         self.head = nn.Sequential(
-            nn.LayerNorm(embed_dim*2),
-            nn.Linear(embed_dim*2, num_joints * 3),
+            nn.LayerNorm(embed_dim*num_joints*2),
+            nn.Linear(embed_dim*num_joints*2, num_joints * 3),
         )
         
     def LBF(self, x) :

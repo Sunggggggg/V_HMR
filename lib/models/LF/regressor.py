@@ -116,18 +116,18 @@ class HSCR(nn.Module):
         self.local_reg = KTD(embed_dim, hidden_dim)
 
     def forward(self, x, embed_3djoint, is_train=False, J_regressor=None):
-        B, T = x.shape[:2]
-        
-        seq_len = x.shape[1]
-        x = x.reshape(-1, x.size(-1))
         batch_size = x.shape[0]
-        init_pose = self.init_pose.expand(batch_size, -1)
-        init_shape = self.init_shape.expand(batch_size, -1)
-        init_cam = self.init_cam.expand(batch_size, -1)
-
-        pred_pose = init_pose
-        pred_shape = init_shape
-        pred_cam = init_cam
+        T = x.shape[1]
+        if init_pose is None:
+            init_pose = self.init_pose.expand(batch_size, T, -1)
+        if init_shape is None:
+            init_shape = self.init_shape.expand(batch_size, T, -1)
+        if init_cam is None:
+            init_cam = self.init_cam.expand(batch_size, T, -1)
+        # print("init",init_pose.shape)
+        pred_pose = init_pose.detach()
+        pred_shape = init_shape.detach()
+        pred_cam = init_cam.detach()
 
         for i in range(3):
             xc_shape_cam = torch.cat([x, pred_shape], -1)
@@ -138,9 +138,9 @@ class HSCR(nn.Module):
             xc_pose_cam = self.fc2(xc_pose_cam)
             xc_pose_cam = self.drop2(xc_pose_cam)
 
-            pred_pose = self.local_reg(xc_pose_cam, embed_3djoint, pred_pose)  # + pred_pose
-            pred_shape = self.decshape(torch.cat([xc_shape_cam, pred_shape], dim=-1))  # + pred_shape
-            pred_cam = self.deccam(torch.cat([xc_pose_cam, xc_shape_cam, pred_cam], -1))  # + pred_cam
+            pred_pose = self.local_reg(xc_pose_cam, embed_3djoint, pred_pose) + pred_pose
+            pred_shape = self.decshape(torch.cat([xc_shape_cam, pred_shape], dim=-1)) + pred_shape
+            pred_cam = self.deccam(torch.cat([xc_pose_cam, xc_shape_cam, pred_cam], -1)) + pred_cam
 
         pred_pose = pred_pose.reshape(-1, 144)
         pred_shape = pred_shape.reshape(-1, 10)
