@@ -207,10 +207,6 @@ class Trainer():
                              f'| 2d_global_accel: {accel_loss_global_2d.avg:.2f} | 3d_global_accel: {accel_loss_global_3d.avg:.2f} ' \
                              f'| 2d_local_accel: {accel_loss_local_2d.avg:.2f} | 3d_local_accel: {accel_loss_local_3d.avg:.2f} '
             
-            for k, v in loss_dict.items():
-                summary_string += f' | {k}: {v:.3f}'
-                self.writer.add_scalar('train_loss/'+k, v, global_step=self.train_global_step)
-
             for k,v in timer.items():
                 summary_string += f' | {k}: {v:.2f}'
 
