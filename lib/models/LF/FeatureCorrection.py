@@ -50,14 +50,14 @@ class ImageFeatureCorrection(nn.Module):
             nn.Linear(embed_dim*2, embed_dim),
         )
 
-    def forward(self, short_f_img, mask_f_img, num_imgs=3):
+    def forward(self, full_f_img, short_f_img, num_imgs=3):
         """
         short_f_img : [B, 3, 2048]
-        mask_f_img  : [B, k, 2048]
+        full_f_img  : [B, k, 2048]
         """
         B = short_f_img.shape[0]
         f_img = self.local_embedding(short_f_img) + self.local_pos_embedding
-        f_seq = self.seq_embedding(mask_f_img) + self.seq_pos_embedding
+        f_seq = self.seq_embedding(full_f_img) + self.seq_pos_embedding
 
         f = torch.cat([f_img, f_seq], dim=1)                        # [B, 3+k, dim]
 

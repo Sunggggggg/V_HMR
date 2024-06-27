@@ -18,6 +18,8 @@ class Model(nn.Module):
 
                  ):
         super().__init__()
+        self.mid_frame = num_frames//2
+        self.stride = 4
         # 
         self.joint_tree = JointTree()
         self.lifter = FreqTempEncoder(num_joints, 32, 3, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_coeff_keep=3)
@@ -49,9 +51,10 @@ class Model(nn.Module):
         
         # 3D Lifting
         pose2d = self.joint_tree.add_joint(pose2d[..., :2])
-        pose3d = self.lifter(pose2d)        # [B, 1, 19, 3]
+        pose3d = self.lifter(pose2d, pose2d[:, self.mid_frame-1:self.mid_frame+2])          # [B, 1, 19, 3]
         # 
-        f_temp = self.temp_encoder(f_img)   # [B, 1, dim]
+        f_temp = self.temp_encoder(f_img[:, self.mid_frame-self.stride:self.mid_frame+self.stride+1]
+                                   , f_img[:, self.mid_frame-1:self.mid_frame+2])           # [B, 1, dim]
 
         # [B, 1, *]
         smpl_output = self.regressor(f_temp, pose3d, is_train=is_train, J_regressor=J_regressor)
