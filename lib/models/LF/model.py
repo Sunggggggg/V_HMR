@@ -70,7 +70,7 @@ class Model(nn.Module):
 
         # [B, 1, *]
         f_out = self.output_proj(f_temp)
-        _, (pred_pose, pred_shape, pred_cam) = self.regressor1(f_out, pose3d, is_train=is_train, J_regressor=J_regressor)
+        _, (pred_pose, pred_shape, pred_cam) = self.regressor1(f_out, is_train=is_train, J_regressor=J_regressor)
         smpl_output = self.regressor2(f_temp, pose3d, pred_pose, pred_shape, pred_cam, is_train=is_train, J_regressor=J_regressor)
     
         scores = None
