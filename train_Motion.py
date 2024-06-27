@@ -14,11 +14,9 @@ from lib.core.config import parse_args
 from lib.utils.utils import prepare_output_dir
 from lib.dataset._loaders import get_data_loaders
 from lib.utils.utils import create_logger, get_optimizer
-#from lib.models.Motion_baseline.model import Model
-#from lib.models.Trans.model import Model
-from lib.core.Disen.trainer import Trainer
-from lib.core.Disen.loss import GLoTLoss
-from lib.models.DCT.model import Model
+from lib.core.trainer import Trainer
+from lib.core.loss import Loss
+from lib.models.FCM.model import Model
 
 from lr_scheduler import CosineAnnealingWarmupRestarts
 
@@ -48,15 +46,14 @@ def main(cfg):
     data_loaders = get_data_loaders(cfg)
 
     # ========= Compile Loss ========= #
-    loss = GLoTLoss(
+    loss = Loss(
         e_loss_weight=cfg.LOSS.KP_2D_W,
         e_3d_loss_weight=cfg.LOSS.KP_3D_W,
         e_pose_loss_weight=cfg.LOSS.POSE_W,
         e_shape_loss_weight=cfg.LOSS.SHAPE_W,
         d_motion_loss_weight=cfg.LOSS.D_MOTION_LOSS_W,
         vel_or_accel_2d_weight = cfg.LOSS.vel_or_accel_2d_weight,
-        vel_or_accel_3d_weight = cfg.LOSS.vel_or_accel_3d_weight,
-        use_accel = cfg.LOSS.use_accel
+        vel_or_accel_3d_weight = cfg.LOSS.vel_or_accel_3d_weight
     )
 
     model = Model().to(cfg.DEVICE)

@@ -104,7 +104,6 @@ def get_data_loaders(cfg):
 
     # ===== Evaluation dataset =====
     overlap = ((cfg.DATASET.SEQLEN - 1)/float(cfg.DATASET.SEQLEN))
-    # overlap = 0
     valid_db = eval(cfg.TRAIN.DATASET_EVAL)(load_opt=cfg.TITLE, set='val', seqlen=cfg.DATASET.SEQLEN, overlap=overlap, debug=cfg.DEBUG)
     # valid_db.vid_indices = valid_db.vid_indices[::2]
 
