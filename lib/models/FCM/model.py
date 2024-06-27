@@ -87,7 +87,7 @@ class Model(nn.Module):
         short_f_joint = self.joint_refiner(full_2d_joint, short_2d_joint)               # [B, 3, 768]
         short_f_joint = self.proj_short_joint(short_f_joint)                            # [B, 3, 256]
         
-        selected_indices = torch.randperm(16)[:8].sort()[0].cuda()
+        selected_indices = torch.randperm(16)[:9].sort()[0].cuda()
         short_f_img = f_img[:, self.mid_frame-1:self.mid_frame+2] # [B, 8, 2048]
         short_f_img = self.temp_local_encoder(short_f_img, f_img[:, selected_indices]) # [B, 3, 256]
         #short_f_img = f_img[:, self.mid_frame-self.stride:self.mid_frame+self.stride+1] # [B, 8, 2048]
