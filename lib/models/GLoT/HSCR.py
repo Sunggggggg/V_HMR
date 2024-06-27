@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from lib.models.smpl import SMPL, SMPL_MODEL_DIR, H36M_TO_J14, SMPL_MEAN_PARAMS
-from lib.models.GLoT.spin import projection
+from lib.models.spin import projection
 from lib.utils.geometry import rot6d_to_rotmat, rotation_matrix_to_angle_axis
 
 ANCESTOR_INDEX = [

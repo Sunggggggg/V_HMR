@@ -14,9 +14,9 @@ from lib.core.config import parse_args
 from lib.utils.utils import prepare_output_dir
 from lib.dataset._loaders import get_data_loaders
 from lib.utils.utils import create_logger, get_optimizer
-from lib.core.trainer import Trainer
-from lib.core.loss import Loss
-from lib.models.FCM.model import Model
+from lib.core.LF.trainer import Trainer
+from lib.core.LF.loss import Loss
+from lib.models.LF.model import Model
 
 from lr_scheduler import CosineAnnealingWarmupRestarts
 
