@@ -188,8 +188,8 @@ class Loss(nn.Module):
         pred_betas_valid = pred_betas
         gt_betas_valid = gt_betas
         if len(pred_rotmat_valid) > 0:
-            loss_regr_pose = self.criterion_regr(pred_rotmat_valid, gt_rotmat_valid)
-            loss_regr_betas = self.criterion_regr(pred_betas_valid, gt_betas_valid)
+            loss_regr_pose = self.criterion_regr(pred_rotmat_valid, gt_rotmat_valid).mean()
+            loss_regr_betas = self.criterion_regr(pred_betas_valid, gt_betas_valid).mean()
         else:
             loss_regr_pose = torch.FloatTensor(1).fill_(0.).to(self.device)
             loss_regr_betas = torch.FloatTensor(1).fill_(0.).to(self.device)
