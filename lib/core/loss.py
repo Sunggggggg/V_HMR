@@ -40,6 +40,7 @@ class Loss(nn.Module):
         self.criterion_shape = nn.L1Loss().to(self.device)
         self.criterion_keypoints = nn.MSELoss(reduction='none').to(self.device)
         self.criterion_regr = nn.MSELoss(reduction='none').to(self.device)
+        self.criterion_accel = nn.MSELoss('none').to(self.device)
 
         self.enc_loss = batch_encoder_disc_l2_loss
         self.dec_loss = batch_adv_disc_l2_loss
