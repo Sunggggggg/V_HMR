@@ -103,7 +103,8 @@ class Loss(nn.Module):
 
     def cal_loss(self, sample_2d_count, real_2d, real_3d, real_3d_theta, w_3d, w_smpl, reduce, flatten, generator_outputs):
         seq_len = real_2d.shape[1]
-        
+
+        real_accel_2d, real_accel_3d = self.get_vel_input(real_2d, real_3d, seq_len, reduce, conf_2d_flag=True)
         real_2d = reduce(real_2d)
         real_3d = reduce(real_3d)
         real_3d_theta = reduce(real_3d_theta)
@@ -116,7 +117,8 @@ class Loss(nn.Module):
         pred_theta = preds['theta'][sample_2d_count:]
         pred_theta = reduce(pred_theta)
         pred_theta = pred_theta[w_smpl]
-               
+
+        preds_accel_2d, preds_accel_3d = self.get_vel_input(preds['kp_2d'], pred_j3d, seq_len, reduce)    
         pred_j2d = reduce(preds['kp_2d'])
         pred_j3d = reduce(pred_j3d)
         pred_j3d = pred_j3d[w_3d]
@@ -138,9 +140,6 @@ class Loss(nn.Module):
         loss_pose = loss_pose * self.e_pose_loss_weight
 
         # Accel loss
-        real_accel_2d, real_accel_3d = self.get_vel_input(real_2d, real_3d, seq_len, reduce, conf_2d_flag=True)
-        preds_accel_2d, preds_accel_3d = self.get_vel_input(preds['kp_2d'], pred_j3d, seq_len, reduce)
-        
         loss_accel_2d = self.keypoint_loss(preds_accel_2d, real_accel_2d, openpose_weight=1., gt_weight=1.) * self.vel_or_accel_2d_weight
         loss_accel_3d = self.accel_3d_loss(preds_accel_3d, real_accel_3d) * self.vel_or_accel_3d_weight
 
