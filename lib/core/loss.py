@@ -92,12 +92,12 @@ class Loss(nn.Module):
             'loss_accel_2d_local': loss_accel_2d_local,
             'loss_accel_3d_local': loss_accel_3d_local
         }
-
-        loss_dict['loss_pose_global'] = loss_pose_global
-        loss_dict['loss_pose_local'] = loss_pose_local
-        loss_dict['loss_shape_global'] = loss_shape_global
-        loss_dict['loss_shape_local'] = loss_shape_local
-            
+        if loss_pose_global is not None:
+            loss_dict['loss_pose_global'] = loss_pose_global
+            loss_dict['loss_pose_local'] = loss_pose_local
+            loss_dict['loss_shape_global'] = loss_shape_global
+            loss_dict['loss_shape_local'] = loss_shape_local
+                
         gen_loss = torch.stack(list(loss_dict.values())).sum()
 
         return gen_loss, loss_dict
@@ -136,9 +136,13 @@ class Loss(nn.Module):
         real_pose, pred_pose = real_3d_theta[:, 3:75], pred_theta[:, 3:75]
 
         # SMPL parameters
-        loss_pose, loss_shape = self.smpl_losses(pred_pose, pred_shape, real_pose, real_shape)
-        loss_shape = loss_shape * self.e_shape_loss_weight
-        loss_pose = loss_pose * self.e_pose_loss_weight
+        if pred_theta.shape[0] > 0:
+            loss_pose, loss_shape = self.smpl_losses(pred_pose, pred_shape, real_pose, real_shape)
+            loss_shape = loss_shape * self.e_shape_loss_weight
+            loss_pose = loss_pose * self.e_pose_loss_weight
+        else:
+            loss_pose = None
+            loss_shape = None
 
         # Accel loss
         loss_accel_2d = self.keypoint_loss(preds_accel_2d, real_accel_2d, openpose_weight=1., gt_weight=1.) * self.vel_or_accel_2d_weight

@@ -109,11 +109,6 @@ class Trainer():
         accel_loss_global_3d = AverageMeter()
         accel_loss_local_2d = AverageMeter()
         accel_loss_local_3d = AverageMeter()
-        loss_pose_global = AverageMeter()
-        loss_pose_local = AverageMeter()
-        loss_shape_global = AverageMeter()
-        loss_shape_local = AverageMeter()
-
 
         timer = {
             'data': 0,
@@ -197,12 +192,6 @@ class Trainer():
             kp_2d_loss_local.update(loss_dict['loss_kp_2d_local'].item(), input_feat.size(0))
             kp_3d_loss_local.update(loss_dict['loss_kp_3d_local'].item(), input_feat.size(0))
 
-            # SMPL parameter loss
-            loss_pose_global.update(loss_dict['loss_pose_global'].item(), input_feat.size(0))
-            loss_pose_local.update(loss_dict['loss_pose_local'].item(), input_feat.size(0))
-            loss_shape_global.update(loss_dict['loss_shape_global'].item(), input_feat.size(0))
-            loss_shape_local.update(loss_dict['loss_shape_local'].item(), input_feat.size(0))
-
             accel_loss_global_2d.update(loss_dict['loss_accel_2d_global'].item(), input_feat.size(0))
             accel_loss_global_3d.update(loss_dict['loss_accel_3d_global'].item(), input_feat.size(0))
             accel_loss_local_2d.update(loss_dict['loss_accel_2d_local'].item(), input_feat.size(0))
@@ -216,9 +205,11 @@ class Trainer():
                              f'| 2d: {kp_2d_loss.avg:.2f} | 3d: {kp_3d_loss.avg:.2f} ' \
                              f'| 2d_local: {kp_2d_loss_local.avg:.2f} | 3d_local: {kp_3d_loss_local.avg:.2f}' \
                              f'| 2d_global_accel: {accel_loss_global_2d.avg:.2f} | 3d_global_accel: {accel_loss_global_3d.avg:.2f} ' \
-                             f'| 2d_local_accel: {accel_loss_local_2d.avg:.2f} | 3d_local_accel: {accel_loss_local_3d.avg:.2f} ' \
-                             f'| loss_pose_global: {loss_pose_global.avg:.2f} | loss_pose_local: {loss_pose_local.avg:.2f} ' \
-                             f'| loss_shape_global: {loss_shape_global.avg:.2f} | loss_shape_local: {loss_shape_local.avg:.2f} ' \
+                             f'| 2d_local_accel: {accel_loss_local_2d.avg:.2f} | 3d_local_accel: {accel_loss_local_3d.avg:.2f} '
+            
+            for k, v in loss_dict.items():
+                summary_string += f' | {k}: {v:.3f}'
+                self.writer.add_scalar('train_loss/'+k, v, global_step=self.train_global_step)
 
             for k,v in timer.items():
                 summary_string += f' | {k}: {v:.2f}'
