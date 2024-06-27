@@ -113,9 +113,11 @@ class HSCR(nn.Module):
         self.local_reg = KTD(embed_dim, hidden_dim)
 
     def forward(self, x, embed_3djoint, init_pose, init_shape, init_cam, is_train=False, J_regressor=None):
-        pred_pose = init_pose.detach()
-        pred_shape = init_shape.detach()
-        pred_cam = init_cam.detach()
+        batch_size, T = x.shape[:2]
+        
+        pred_pose = init_pose.reshape(batch_size, T, -1).detach()
+        pred_shape = init_shape.reshape(batch_size, T, -1).detach()
+        pred_cam = init_cam.reshape(batch_size, T, -1).detach()
 
         xc_shape_cam = torch.cat([x, pred_shape], -1)
         xc_pose_cam = torch.cat([x, pred_pose], -1)
