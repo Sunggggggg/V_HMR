@@ -116,7 +116,7 @@ class HSCR(nn.Module):
         pred_pose = init_pose.detach()
         pred_shape = init_shape.detach()
         pred_cam = init_cam.detach()
-        
+
         xc_shape_cam = torch.cat([x, pred_shape], -1)
         xc_pose_cam = torch.cat([x, pred_pose], -1)
         xc_shape_cam = self.fc1(xc_shape_cam)
@@ -216,10 +216,16 @@ class Regressor(nn.Module):
         batch_size = x.shape[0]
         if init_pose is None:
             init_pose = self.init_pose.expand(batch_size, -1)
+        else : 
+            init_pose = init_pose.reshape(-1, init_pose.size(-1))
         if init_shape is None:
             init_shape = self.init_shape.expand(batch_size, -1)
+        else : 
+            init_shape = init_shape.reshape(-1, init_shape.size(-1))
         if init_cam is None:
             init_cam = self.init_cam.expand(batch_size, -1)
+        else : 
+            init_cam = init_cam.reshape(-1, init_cam.size(-1))
 
         pred_pose = init_pose
         pred_shape = init_shape
