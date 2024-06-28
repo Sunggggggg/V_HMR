@@ -6,8 +6,7 @@ from functools import partial
 from .jointspace import JointTree
 from .transformer import TemporalEncoder, JointEncoder, FreqTempEncoder, CrossAttention, Transformer, STEncoder, FreqTempEncoder_img
 from .regressor import GlobalRegressor
-from .KTD import KTD
-
+from lib.models.GLoT.HSCR import HSCR
 """
 PoseformerV2 사용
 GMM 사용 X
@@ -51,7 +50,7 @@ class Model(nn.Module):
         self.temp_local_encoder = Transformer(depth=4, embed_dim=embed_dim//2, length=self.stride*2+1)
 
         self.local_decoder = CrossAttention(embed_dim//2)
-        self.local_regressor = KTD(feat_dim=embed_dim//2)
+        self.local_regressor = HSCR()
         
         self.apply(self._init_weights)
         if pretrained and os.path.isfile(pretrained):
@@ -106,7 +105,7 @@ class Model(nn.Module):
         short_f_img = self.temp_local_encoder(short_f_img)                              # [B, 6, 256]
         short_f_img = short_f_img[:, self.stride-1:self.stride+2]
 
-        f_st = self.local_decoder(short_f_joint, short_f_img)
+        f_st = self.local_decoder(short_f_joint, short_f_img)       # [B, 3, 256]
 
         if is_train :
             f_st = f_st
