@@ -1,3 +1,5 @@
+import os
+from lib.core.config import BASE_DATA_DIR
 import torch
 import torch.nn as nn
 from functools import partial 
@@ -20,7 +22,7 @@ class Model(nn.Module):
                  num_heads=8,
                  depth=4,
                  drop_rate=0.,
-
+                 pretrained=os.path.join(BASE_DATA_DIR, 'spin_model_checkpoint.pth.tar'),
                  ):
         super().__init__()
         self.stride = 4
@@ -39,7 +41,8 @@ class Model(nn.Module):
 
         self.proj_dec = nn.Linear(embed_dim, embed_dim//2)
         self.global_decoder = Transformer(depth=1, embed_dim=embed_dim//2)
-        self.global_regressor = GlobalRegressor(embed_dim//2)
+        self.proj_output = nn.Linear(embed_dim//2, 2048)
+        self.global_regressor = GlobalRegressor(2048)
 
         # Freqtemp transformer
         self.joint_refiner = FreqTempEncoder(num_joints, 32, 4, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_coeff_keep=3)
@@ -51,6 +54,11 @@ class Model(nn.Module):
         self.local_regressor = KTD(feat_dim=embed_dim//2)
         
         self.apply(self._init_weights)
+        if pretrained and os.path.isfile(pretrained):
+            pretrained_dict = torch.load(pretrained)['model']
+
+            self.global_regressor.load_state_dict(pretrained_dict, strict=False)
+            print(f'=> loaded pretrained model from \'{pretrained}\'')
 
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
@@ -83,9 +91,9 @@ class Model(nn.Module):
         f = self.global_decoder(f)              # [B, T, 256]
 
         if is_train :
-            f_global_output = f
+            f_global_output = self.proj_output(f)
         else :
-            f_global_output = f[:, self.mid_frame:self.mid_frame+1]
+            f_global_output = self.proj_output(f[:, self.mid_frame:self.mid_frame+1])
         smpl_output_global, pred_global = self.global_regressor(f_global_output, n_iter=3, is_train=is_train, J_regressor=J_regressor)
 
         # 

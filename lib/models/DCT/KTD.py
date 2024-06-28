@@ -91,7 +91,7 @@ class KTD(nn.Module):
             regressor = nn.Linear(hidden_dim + npose_per_joint * len(ancestor_idx) + 6, npose_per_joint)
             nn.init.xavier_uniform_(regressor.weight, gain=0.01)
             self.joint_regs.append(regressor)
-            
+
         self.decshape = nn.Linear(hidden_dim, nshape)
         self.deccam = nn.Linear(hidden_dim, ncam)
         nn.init.xavier_uniform_(self.decshape.weight, gain=0.01)
@@ -113,7 +113,7 @@ class KTD(nn.Module):
         
         pose = []
         for ancestor_idx, reg in zip(ANCESTOR_INDEX, self.joint_regs):
-            ances = torch.cat([x] + [pose[i] for i in ancestor_idx], dim=1)
+            ances = torch.cat([x] + [pose[i] for i in ancestor_idx], dim=-1)
             pose.append(reg(ances))
 
         pred_pose = torch.cat(pose, dim=1) + pred_pose
