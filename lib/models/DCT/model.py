@@ -3,8 +3,8 @@ import torch.nn as nn
 from functools import partial 
 from .jointspace import JointTree
 from .transformer import TemporalEncoder, JointEncoder, FreqTempEncoder, CrossAttention, Transformer, STEncoder, FreqTempEncoder_img
-from .regressor import LocalRegressorThetaBeta, GlobalRegressor, NewLocalRegressor, LocalRegressor
-from lib.models.GLoT.HSCR import HSCR
+from .regressor import GlobalRegressor
+from .KTD import KTD
 
 """
 PoseformerV2 사용
@@ -31,8 +31,7 @@ class Model(nn.Module):
         self.temp_encoder = Transformer(depth=3, embed_dim=embed_dim)
         
         # Spatio transformer
-        #self.joint_encoder = JointEncoder(num_joint=num_joints)
-        self.joint_encoder = FreqTempEncoder(num_joints, 32, 3, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_coeff_keep=3)
+        self.joint_encoder = JointEncoder(num_joint=num_joints)
 
         # Global regre
         self.proj_input = nn.Linear(num_joints*32, embed_dim)
@@ -43,13 +42,25 @@ class Model(nn.Module):
         self.global_regressor = GlobalRegressor(embed_dim//2)
 
         # Freqtemp transformer
-        self.joint_refiner = FreqTempEncoder(num_joints, 32, 3, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_coeff_keep=3)
+        self.joint_refiner = FreqTempEncoder(num_joints, 32, 4, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_coeff_keep=3)
         self.proj_short_joint = nn.Linear(num_joints*32, embed_dim//2)
         self.proj_short_img = nn.Linear(2048, embed_dim//2)
-        self.temp_local_encoder = Transformer(depth=2, embed_dim=embed_dim//2, length=self.stride*2+1)
+        self.temp_local_encoder = Transformer(depth=4, embed_dim=embed_dim//2, length=self.stride*2+1)
 
         self.local_decoder = CrossAttention(embed_dim//2)
-        self.local_regressor = NewLocalRegressor(embed_dim//2)
+        self.local_regressor = KTD(feat_dim=embed_dim//2)
+        
+        self.apply(self._init_weights)
+
+    def _init_weights(self, m):
+        if isinstance(m, nn.Linear):
+            # we use xavier_uniform following official JAX ViT:
+            torch.nn.init.xavier_uniform_(m.weight)
+            if isinstance(m, nn.Linear) and m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+        elif isinstance(m, nn.LayerNorm):
+            nn.init.constant_(m.bias, 0)
+            nn.init.constant_(m.weight, 1.0)
         
 
     def forward(self, f_img, vitpose_2d, is_train=False, J_regressor=None) :
@@ -64,7 +75,7 @@ class Model(nn.Module):
 
         # Joint transformer
         vitpose_2d = self.jointtree.add_joint(vitpose_2d[..., :2])      # [B, T, 19, 2] 
-        f_joint = self.joint_encoder(vitpose_2d, vitpose_2d, 16)        # [B, T, 768(24*32)]
+        f_joint = self.joint_encoder(vitpose_2d)        # [B, T, 768(24*32)]
         f_joint = self.proj_input(f_joint)
         
         f = self.norm_input(f_joint + f_temp)   # [B, T, 512]
@@ -79,7 +90,7 @@ class Model(nn.Module):
 
         # 
         full_2d_joint, short_2d_joint = vitpose_2d, vitpose_2d[:, self.mid_frame-1:self.mid_frame+2]
-        short_f_joint = self.joint_refiner(full_2d_joint, short_2d_joint).flatten(-2)       # [B, 3, 768]
+        short_f_joint = self.joint_refiner(full_2d_joint, short_2d_joint)               # [B, 3, 768]
         short_f_joint = self.proj_short_joint(short_f_joint)
         
         short_f_img = f_img[:, self.mid_frame-self.stride:self.mid_frame+self.stride+1] # [B, 6, 2048]

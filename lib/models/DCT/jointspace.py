@@ -57,7 +57,7 @@ class JointTree():
         self.num_joint_init = num_joint_init
         self.num_joint_out = num_joint_init + 3 # pelvis, neck, spin
 
-        self.jointtoken = nn.Parameter(torch.rand(9, 19))
+        #self.jointtoken = nn.Parameter(torch.rand(9, 19))
 
     def cal_pelvis(self, vitpose_2d):
         return vitpose_2d[:,:,[11,12],:2].mean(dim=2, keepdim=True)

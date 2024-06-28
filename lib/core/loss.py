@@ -166,6 +166,8 @@ class Loss(nn.Module):
         """
         Compute 3D keypoint loss for the examples that 3D keypoint annotations are available.
         The loss is weighted by the confidence.
+
+        pred_keypoints_3d : [BT, 49, 3]
         """
         pred_keypoints_3d = pred_keypoints_3d[:, 25:39, :]
         gt_keypoints_3d = gt_keypoints_3d[:, 25:39, :]
