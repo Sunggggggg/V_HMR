@@ -88,7 +88,7 @@ class KTD(nn.Module):
         #     nn.init.xavier_uniform_(regressor.weight, gain=0.01)
         #     self.joint_regs.append(regressor)
         for joint_idx, ancestor_idx in enumerate(ANCESTOR_INDEX):
-            regressor = nn.Linear(hidden_dim + npose_per_joint * len(ancestor_idx) + 6, npose_per_joint)
+            regressor = nn.Linear(hidden_dim + npose_per_joint * len(ancestor_idx), npose_per_joint)
             nn.init.xavier_uniform_(regressor.weight, gain=0.01)
             self.joint_regs.append(regressor)
 
