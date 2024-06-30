@@ -77,7 +77,7 @@ class KTD(nn.Module):
         nshape = 10
         ncam = 3
 
-        self.fc1 = nn.Linear(feat_dim, hidden_dim)
+        self.fc1 = nn.Linear(feat_dim + 10 + 3, hidden_dim)
         self.drop1 = nn.Dropout()
         self.fc2 = nn.Linear(hidden_dim, hidden_dim)
         self.drop2 = nn.Dropout()
