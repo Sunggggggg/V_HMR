@@ -77,9 +77,9 @@ class KTD(nn.Module):
         nshape = 10
         ncam = 3
 
-        self.fc1 = nn.Linear(feat_dim + 10 + 3, hidden_dim)
+        self.fc1 = nn.Linear(feat_dim + 10, hidden_dim)
         self.drop1 = nn.Dropout()
-        self.fc2 = nn.Linear(hidden_dim, hidden_dim)
+        self.fc2 = nn.Linear(feat_dim + 144, hidden_dim)
         self.drop2 = nn.Dropout()
         
         self.joint_regs = nn.ModuleList()
@@ -89,7 +89,7 @@ class KTD(nn.Module):
             self.joint_regs.append(regressor)
 
         self.decshape = nn.Linear(hidden_dim, nshape)
-        self.deccam = nn.Linear(hidden_dim, ncam)
+        self.deccam = nn.Linear(hidden_dim*2+3, ncam)
         nn.init.xavier_uniform_(self.decshape.weight, gain=0.01)
         nn.init.xavier_uniform_(self.deccam.weight, gain=0.01)
 
@@ -105,24 +105,25 @@ class KTD(nn.Module):
         pred_cam = init_cam
 
         for i in range(3):
-            x = torch.cat([pred_shape, pred_cam, f_s], dim=-1)
-            x = self.fc1(x)
-            x = self.drop1(x)
-            x = self.fc2(x)
-            x = self.drop2(x)
-            pred_shape = self.decshape(x) + pred_shape
-            pred_cam = self.deccam(x) + pred_cam
+            xc_shape_cam = torch.cat([pred_shape, f_s], dim=-1)
+            xc_shape_cam = self.fc1(xc_shape_cam)
+            xc_shape_cam = self.drop1(xc_shape_cam)
+            pred_shape = self.decshape(xc_shape_cam) + pred_shape
         
         pose = []
         cnt = 0
+        xc_pose_cam = torch.cat([pred_pose, f_s], dim=-1)
+        xc_pose_cam = self.fc2(xc_pose_cam)
+        xc_pose_cam = self.drop2(xc_pose_cam)
         for ancestor_idx, joint_idx, reg in zip(ANCESTOR_INDEX, Joint3D_INDEX, self.joint_regs):
-            ances = torch.cat([x] + [f_p[:, :, i] for i in joint_idx] + [pose[i] for i in ancestor_idx],dim=-1)
+            ances = torch.cat([xc_pose_cam] + [f_p[:, :, i] for i in joint_idx] + [pose[i] for i in ancestor_idx],dim=-1)
             ances = torch.cat((ances, pred_pose[:, :, cnt * 6: cnt * 6 + 6]), dim=-1)
 
             cnt += 1
             pose.append(reg(ances))
 
-        pred_pose = torch.cat(pose, dim=-1)
+        pred_pose = torch.cat(pose, dim=-1) + pred_pose
+        pred_cam = self.deccam(torch.cat([xc_pose_cam, xc_shape_cam, pred_cam], -1)) + pred_cam
 
         pred_pose = pred_pose.reshape(-1, 144)
         pred_shape = pred_shape.reshape(-1, 10)
