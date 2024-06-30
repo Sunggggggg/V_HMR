@@ -49,7 +49,7 @@ class Model(nn.Module):
         self.proj_short_img = nn.Linear(2048, embed_dim//2)
         self.temp_local_encoder = Transformer(depth=3, embed_dim=embed_dim//2, length=self.stride*2+1)
 
-        self.local_decoder = CrossAttention(embed_dim//2)
+        #self.local_decoder = CrossAttention(embed_dim//2)
         #self.local_regressor = NewLocalRegressor(embed_dim//2)
         self.local_regressor = KTD()
 
@@ -88,14 +88,19 @@ class Model(nn.Module):
         short_f_img = self.temp_local_encoder(short_f_img)                              # [B, 6, 256]
         short_f_img = short_f_img[:, self.stride-1:self.stride+2]
 
-        f_st = self.local_decoder(short_f_joint, short_f_img)                           # [B, 3, 256]
+        #f_st = self.local_decoder(short_f_joint, short_f_img)                           # [B, 3, 256]
 
         if is_train :
-            f_st = f_st
+            #f_st = f_st
+            short_f_joint = short_f_joint
+            short_f_img = short_f_img
+
         else :
-            f_st = f_st[:, 1][:, None]
-    
-        smpl_output = self.local_regressor(f_st, pred_global[0], pred_global[1], pred_global[2], is_train=is_train, J_regressor=J_regressor)
+            #f_st = f_st[:, 1][:, None]
+            short_f_joint = short_f_joint[:, 1][:, None]
+            short_f_img = short_f_img[:, 1][:, None]
+
+        smpl_output = self.local_regressor(short_f_img, short_f_joint, pred_global[0], pred_global[1], pred_global[2], is_train=is_train, J_regressor=J_regressor)
 
         scores = None
         if not is_train:
