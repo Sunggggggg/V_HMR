@@ -51,7 +51,7 @@ class Model(nn.Module):
 
         self.local_decoder = CrossAttention(embed_dim//2)
         #self.local_regressor = NewLocalRegressor(embed_dim//2)
-        self.local_regressor = NewLocalRegressor(embed_dim//2)
+        self.local_regressor = KTD()
 
     def forward(self, f_img, vitpose_2d, is_train=False, J_regressor=None) :
         """
