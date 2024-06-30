@@ -92,12 +92,12 @@ class Model(nn.Module):
 
         if is_train :
             #f_st = f_st
-            short_f_joint = short_f_joint
+            short_f_joint = short_f_joint.reshape(B, 3, 19, -1)
             short_f_img = short_f_img
 
         else :
             #f_st = f_st[:, 1][:, None]
-            short_f_joint = short_f_joint[:, 1][:, None]
+            short_f_joint = short_f_joint[:, 1][:, None].reshape(B, 3, 19, -1)
             short_f_img = short_f_img[:, 1][:, None]
 
         smpl_output = self.local_regressor(short_f_img, short_f_joint, pred_global[0], pred_global[1], pred_global[2], is_train=is_train, J_regressor=J_regressor)
