@@ -12,8 +12,8 @@ class GlobalRegressor(nn.Module):
 
         self.fc1 = nn.Linear(dim + npose + 13, 1024)
         self.drop1 = nn.Dropout()
-        self.fc2 = nn.Linear(1024, 1024)
-        self.drop2 = nn.Dropout()
+        #self.fc2 = nn.Linear(1024, 1024)
+        #self.drop2 = nn.Dropout()
 
         self.decpose = nn.Linear(1024, npose)
         self.decshape = nn.Linear(1024, 10)
