@@ -45,7 +45,7 @@ class Model(nn.Module):
 
         # Freqtemp transformer
         self.joint_refiner = FreqTempEncoder(num_joints, 32, 3, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_coeff_keep=3)
-        self.proj_short_joint = nn.Linear(num_joints*32, embed_dim//2)
+        #self.proj_short_joint = nn.Linear(num_joints*32, embed_dim//2)
         self.proj_short_img = nn.Linear(2048, embed_dim//2)
         self.temp_local_encoder = Transformer(depth=3, embed_dim=embed_dim//2, length=self.stride*2+1)
 
@@ -81,7 +81,7 @@ class Model(nn.Module):
         # Joint Local
         full_2d_joint, short_2d_joint = vitpose_2d, vitpose_2d[:, self.mid_frame-1:self.mid_frame+2]
         short_f_joint = self.joint_refiner(full_2d_joint, short_2d_joint)               # [B, 3, 768]
-        short_f_joint = self.proj_short_joint(short_f_joint)
+        #short_f_joint = self.proj_short_joint(short_f_joint)
         
         short_f_img = f_img[:, self.mid_frame-self.stride:self.mid_frame+self.stride+1] # [B, 6, 2048]
         short_f_img = self.proj_short_img(short_f_img)
