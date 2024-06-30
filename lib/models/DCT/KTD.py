@@ -35,10 +35,10 @@ ANCESTOR_INDEX = [
 ]
 
 Joint3D_INDEX = [
-    [17],  # 0 Pelvis_SMP
-    [17, 11],  # L Hip
-    [17, 12],  # R Hip
-    [17],  # 3
+    [17],       # 0 Pelvis_SMP
+    [17, 11],   # L Hip
+    [17, 12],   # R Hip
+    [17],       # 3
     [17, 11, 13],  # 4
     [17, 12, 14],
     [17],  # 6
@@ -62,7 +62,7 @@ Joint3D_INDEX = [
 ]
 
 class KTD(nn.Module):
-    def __init__(self, feat_dim=2048, hidden_dim=1024):
+    def __init__(self, feat_dim=256, hidden_dim=512):
         super(KTD, self).__init__()
 
         self.feat_dim = feat_dim
@@ -83,12 +83,8 @@ class KTD(nn.Module):
         self.drop2 = nn.Dropout()
         
         self.joint_regs = nn.ModuleList()
-        # for joint_idx, ancestor_idx in zip(Joint3D_INDEX, ANCESTOR_INDEX):
-        #     regressor = nn.Linear(hidden_dim + feat_dim * len(joint_idx) + npose_per_joint * len(ancestor_idx) + 6, npose_per_joint)
-        #     nn.init.xavier_uniform_(regressor.weight, gain=0.01)
-        #     self.joint_regs.append(regressor)
-        for joint_idx, ancestor_idx in enumerate(ANCESTOR_INDEX):
-            regressor = nn.Linear(hidden_dim + npose_per_joint * len(ancestor_idx), npose_per_joint)
+        for joint_idx, ancestor_idx in zip(Joint3D_INDEX, ANCESTOR_INDEX):
+            regressor = nn.Linear(hidden_dim + 32 * len(joint_idx) + npose_per_joint * len(ancestor_idx) + 6, npose_per_joint)
             nn.init.xavier_uniform_(regressor.weight, gain=0.01)
             self.joint_regs.append(regressor)
 
@@ -97,26 +93,36 @@ class KTD(nn.Module):
         nn.init.xavier_uniform_(self.decshape.weight, gain=0.01)
         nn.init.xavier_uniform_(self.deccam.weight, gain=0.01)
 
-    def forward(self, x, init_pose, init_shape, init_cam, is_train=False, J_regressor=None):
+    def forward(self, f_s, f_p, init_pose, init_shape, init_cam, is_train=False, J_regressor=None):
         """
+        f_s : [B, 3, 256]
+        f_p : [B, 3, J, d]
+
+        init_pose : [B, T, 144]
         """
         pred_pose = init_pose
         pred_shape = init_shape
         pred_cam = init_cam
 
-        x = self.fc1(x)
-        x = self.drop1(x)
-        x = self.fc2(x)
-        x = self.drop2(x)
-        pred_shape = self.decshape(x) + pred_shape
-        pred_cam = self.deccam(x) + pred_cam
+        for i in range(3):
+            x = torch.cat([pred_shape, pred_cam, f_s], dim=-1)
+            x = self.fc1(x)
+            x = self.drop1(x)
+            x = self.fc2(x)
+            x = self.drop2(x)
+            pred_shape = self.decshape(x) + pred_shape
+            pred_cam = self.deccam(x) + pred_cam
         
         pose = []
-        for ancestor_idx, reg in zip(ANCESTOR_INDEX, self.joint_regs):
-            ances = torch.cat([x] + [pose[i] for i in ancestor_idx], dim=-1)
+        cnt = 0
+        for ancestor_idx, joint_idx, reg in zip(ANCESTOR_INDEX, Joint3D_INDEX, self.joint_regs):
+            ances = torch.cat([x] + [f_p[:, :, i] for i in joint_idx] + [pose[i] for i in ancestor_idx],dim=-1)
+            ances = torch.cat((ances, pred_pose[:, :, cnt * 6: cnt * 6 + 6]), dim=-1)
+
+            cnt += 1
             pose.append(reg(ances))
 
-        pred_pose = torch.cat(pose, dim=1) + pred_pose
+        pred_pose = torch.cat(pose, dim=-1)
 
         pred_pose = pred_pose.reshape(-1, 144)
         pred_shape = pred_shape.reshape(-1, 10)

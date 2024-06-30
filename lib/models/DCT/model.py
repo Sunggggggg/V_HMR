@@ -4,9 +4,9 @@ import torch
 import torch.nn as nn
 from functools import partial 
 from .jointspace import JointTree
-from .transformer import TemporalEncoder, JointEncoder, FreqTempEncoder, CrossAttention, Transformer, STEncoder, FreqTempEncoder_img
+from .transformer import JointEncoder, FreqTempEncoder, CrossAttention, Transformer
 from .regressor import GlobalRegressor, NewLocalRegressor
-
+from .KTD import KTD
 """
 PoseformerV2 사용
 GMM 사용 X
@@ -33,7 +33,7 @@ class Model(nn.Module):
         self.temp_encoder = Transformer(depth=3, embed_dim=embed_dim)
         
         # Spatio transformer
-        self.joint_encoder = FreqTempEncoder(num_joints, 32, 3, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_coeff_keep=3)
+        self.joint_encoder = JointEncoder(num_joint=num_joints)
 
         # Global regre
         self.proj_input = nn.Linear(num_joints*32, embed_dim)
@@ -44,12 +44,13 @@ class Model(nn.Module):
         self.global_regressor = GlobalRegressor(embed_dim//2)
 
         # Freqtemp transformer
-        self.joint_refiner = FreqTempEncoder(num_joints, 32, 4, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_coeff_keep=3)
+        self.joint_refiner = FreqTempEncoder(num_joints, 32, 3, norm_layer=partial(nn.LayerNorm, eps=1e-6), num_coeff_keep=3)
         self.proj_short_joint = nn.Linear(num_joints*32, embed_dim//2)
         self.proj_short_img = nn.Linear(2048, embed_dim//2)
-        self.temp_local_encoder = Transformer(depth=4, embed_dim=embed_dim//2, length=self.stride*2+1)
+        self.temp_local_encoder = Transformer(depth=3, embed_dim=embed_dim//2, length=self.stride*2+1)
 
         self.local_decoder = CrossAttention(embed_dim//2)
+        #self.local_regressor = NewLocalRegressor(embed_dim//2)
         self.local_regressor = NewLocalRegressor(embed_dim//2)
 
     def forward(self, f_img, vitpose_2d, is_train=False, J_regressor=None) :
@@ -64,7 +65,7 @@ class Model(nn.Module):
 
         # Joint transformer
         vitpose_2d = self.jointtree.add_joint(vitpose_2d[..., :2])      # [B, T, 19, 2] 
-        f_joint = self.joint_encoder(vitpose_2d, vitpose_2d, self.num_frames)                      
+        f_joint = self.joint_encoder(vitpose_2d)                        #                      
         f_joint = self.proj_input(f_joint)
         
         f = self.norm_input(f_joint + f_temp)   # [B, T, 512]
