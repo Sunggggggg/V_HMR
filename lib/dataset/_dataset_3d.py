@@ -142,24 +142,24 @@ class Dataset3D(Dataset):
         print(f'Loaded {self.dataset_name} dataset from {db_file}')
 
         ### Video caption -> Text embedding
-        Video_DB_DIR = '/mnt/SKY/V_HMR/data/preprocessed_data/Video_caption/'
-        if self.set == 'train':
-            if self.dataset_name == '3dpw':
-                caption_db_file = osp.join(Video_DB_DIR, f'{self.dataset_name}_{self.set}_caption.pt')
-            elif self.dataset_name == 'mpii3d':
-                caption_db_file = osp.join(Video_DB_DIR, f'{self.dataset_name}_{self.set}_caption.pt')
-            elif self.dataset_name == 'h36m':
-                caption_db_file = osp.join(Video_DB_DIR, f'{self.dataset_name}_{self.set}_caption.pt')
+        # Video_DB_DIR = '/mnt/SKY/V_HMR/data/preprocessed_data/Video_caption/'
+        # if self.set == 'train':
+        #     if self.dataset_name == '3dpw':
+        #         caption_db_file = osp.join(Video_DB_DIR, f'{self.dataset_name}_{self.set}_caption.pt')
+        #     elif self.dataset_name == 'mpii3d':
+        #         caption_db_file = osp.join(Video_DB_DIR, f'{self.dataset_name}_{self.set}_caption.pt')
+        #     elif self.dataset_name == 'h36m':
+        #         caption_db_file = osp.join(Video_DB_DIR, f'{self.dataset_name}_{self.set}_caption.pt')
 
-        elif self.set == 'val':
-            caption_db_file = osp.join(Video_DB_DIR, f'{self.dataset_name}_{self.set}_caption.pt')
+        # elif self.set == 'val':
+        #     caption_db_file = osp.join(Video_DB_DIR, f'{self.dataset_name}_{self.set}_caption.pt')
         
-        if osp.isfile(caption_db_file):
-            caption_db = joblib.load(caption_db_file)
-        else:
-            raise ValueError(f'{caption_db_file} do not exists')
+        # if osp.isfile(caption_db_file):
+        #     caption_db = joblib.load(caption_db_file)
+        # else:
+        #     raise ValueError(f'{caption_db_file} do not exists')
 
-        print(f'Loaded {self.dataset_name} dataset from {caption_db_file}')
+        # print(f'Loaded {self.dataset_name} dataset from {caption_db_file}')
 
         return db, caption_db
 
